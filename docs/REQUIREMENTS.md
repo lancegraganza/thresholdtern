@@ -2,36 +2,36 @@
 
 This matrix records observed evidence, not assumed completion. **The submission is not complete until the pending network and publication items below are verified.** Organizer Level 4–6 prompts are later milestones and have not been claimed.
 
-| Requirement | Status | Evidence / next action |
-| --- | --- | --- |
-| Node 22 and Compact toolchain available | ✓ Local | Node 22; Compact devtools 0.5.2, compiler 0.31.1 |
-| Docker and local proof server | ✓ Local | `thresholdtern-proof-server-1`, localhost:6302, successful actual proofs |
-| Compact contract compiles | ✓ Local | `npm run compact:compile`; generated verify and close circuits |
-| Public ledger, private witness, deliberate disclose | ✓ Implemented | `contracts/thresholdtern.compact`; exact value stays in the witness, only the result is disclosed |
-| Generated managed circuits and keys present | ✓ Local | `managed/thresholdtern/{contract,compiler,keys,zkir}` |
-| Passing suite, minimum 3 tests | ✓ Local | 25 tests; generated contract execution and frontend validation, `evidence/validation.txt` |
-| Real proof generation | ✓ Local | Eligible/ineligible proofs: 2940 bytes each; close proof: 4508 bytes, `evidence/local-proofs.json` |
-| Genuine on-chain verification | ✗ Pending | Connect a funded Preprod wallet, publish a gate, then confirm a participant call |
-| Deployed Preprod address | ✗ Pending | User-authorized wallet deployment; then `npm run verify:preprod -- <address>` |
-| Verified address in README | ✗ Pending | Address section exists with an explicit pending status; replace only after confirmation |
-| README product idea, privacy model and setup | ✓ Implemented | Root README and `docs/ARCHITECTURE.md` |
-| Lace connect/disconnect | ✓ Implemented; ✗ live approval pending | API 4.x discovery, explicit Preprod authorization, status and key validation; disconnect clears session |
-| Frontend successfully calls deployed circuit | ✗ Pending | SDK deploy/find/call integration exists; no successful live call claimed |
-| Observable privacy behavior | ✓ Circuit/prover; ✗ network demo pending | Distinct eligible private inputs have identical public transcripts; needs live demonstration |
-| Landing and separate creator/participant flows | ✓ Local UI review | Landing, dashboard, gates, four-step wizard, participant, activity and settings |
-| State and error handling | ✓ Implemented | Missing/rejected/wrong-network wallets, invalid gate/input, expiry, closed gate, proof failure, pending receipt recovery |
-| Refresh and public persistence | ✓ Implemented | Draft/public gate recovery, encrypted creator secret, pending transaction IDs; exact values never persisted |
-| Responsive navigation and native focus-managed dialogs | ✓ Implemented / reviewed | Sidebar on desktop, bottom navigation on mobile; dialog focus and reduced-motion rules |
-| Production build with zero errors | ✓ Local | `npm run build` completed successfully |
-| 5 / 8 / 10 meaningful commits | ✓ Local history | More than 10 milestone commits; `git log --oneline` |
-| Correct project structure | ✓ Implemented | Next.js App Router replaces organizer's Vite App.tsx/main.tsx; contracts, managed, src, tests, docs and workflows present |
-| CI workflow compile + test on push | ✓ File; ✗ remote run pending | `.github/workflows/ci.yml`; no Git remote supplied |
-| Green CI badge | ✗ Pending | README badge explicitly says not published; bind the real Actions badge after publication |
-| Public GitHub repo / live frontend URL | ✗ Pending | No remote or hosting destination supplied; Vercel configuration and commands documented |
-| Compile, test and deployed-address screenshots | ✗ Submission captures pending | Actual logs provided; capture these plus the confirmed address for submission |
-| One-minute demo video | ✗ Pending | `docs/DEMO.md` checklist |
-| Selected idea and owner-authored proposal | ✓ Idea selected; ✗ proposal approval pending | Age / Eligibility Gate; fill organizer placeholders in PROPOSAL.md and submit for approval |
-| User guide | ✓ Implemented | `docs/USAGE.md` |
+| Requirement                                            | Status                                       | Evidence / next action                                                                                                                                    |
+| ------------------------------------------------------ | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node 22 and Compact toolchain available                | ✓ Local                                      | Node 22; Compact devtools 0.5.2, compiler 0.31.1                                                                                                          |
+| Docker and local proof server                          | ✓ Local                                      | `thresholdtern-proof-server-1`, localhost:6302, successful actual proofs                                                                                  |
+| Compact contract compiles                              | ✓ Local                                      | `npm run compact:compile`; generated verify and close circuits                                                                                            |
+| Public ledger, private witness, deliberate disclose    | ✓ Implemented                                | `contracts/thresholdtern.compact`; exact value stays in the witness, only the result is disclosed                                                         |
+| Generated managed circuits and keys present            | ✓ Local                                      | `managed/thresholdtern/{contract,compiler,keys,zkir}`                                                                                                     |
+| Passing suite, minimum 3 tests                         | ✓ Local                                      | 31 tests; generated contract execution, frontend validation, wallet adapter and encrypted SDK storage, `evidence/redesign-validation.txt`                 |
+| Real proof generation                                  | ✓ Local                                      | Eligible/ineligible proofs: 2940 bytes each; close proof: 4508 bytes, `evidence/local-proofs.json`                                                        |
+| Genuine on-chain verification                          | ✗ Pending                                    | Connect a funded Preprod wallet, publish a gate, then confirm a participant call                                                                          |
+| Deployed Preprod address                               | ✗ Pending                                    | User-authorized wallet deployment; then `npm run verify:preprod -- <address>`                                                                             |
+| Verified address in README                             | ✗ Pending                                    | Address section exists with an explicit pending status; replace only after confirmation                                                                   |
+| README product idea, privacy model and setup           | ✓ Implemented                                | Root README and `docs/ARCHITECTURE.md`                                                                                                                    |
+| Lace connect/disconnect                                | ✓ Implemented; ✗ live approval pending       | API 4.x discovery, explicit Preprod authorization, status and key validation; disconnect clears session                                                   |
+| Frontend successfully calls deployed circuit           | ✗ Pending                                    | SDK deploy/find/call integration exists; no successful live call claimed                                                                                  |
+| Observable privacy behavior                            | ✓ Circuit/prover; ✗ network demo pending     | Distinct eligible private inputs have identical public transcripts; needs live demonstration                                                              |
+| Landing and separate creator/participant flows         | ✓ Local UI review                            | Landing, dashboard, gates, four-step wizard, participant, activity and settings                                                                           |
+| State and error handling                               | ✓ Implemented                                | Missing/rejected/wrong-network wallets, invalid gate/input, expiry, closed gate, proof failure, pending receipt recovery                                  |
+| Refresh and public persistence                         | ✓ Implemented                                | Draft/public gate recovery, encrypted creator secret, pending transaction IDs; exact values never persisted                                               |
+| Responsive navigation and native focus-managed dialogs | ✓ Implemented / reviewed                     | Horizontal desktop navigation, bottom navigation on mobile; native dialog focus, GSAP transitions and reduced-motion rules; `evidence/REDESIGN-REVIEW.md` |
+| Production build with zero errors                      | ✓ Local                                      | `npm run build` completed successfully                                                                                                                    |
+| 5 / 8 / 10 meaningful commits                          | ✓ Local history                              | More than 10 milestone commits; `git log --oneline`                                                                                                       |
+| Correct project structure                              | ✓ Implemented                                | Next.js App Router replaces organizer's Vite App.tsx/main.tsx; contracts, managed, src, tests, docs and workflows present                                 |
+| CI workflow compile + test on push                     | ✓ File; ✗ remote run pending                 | `.github/workflows/ci.yml`; no Git remote supplied                                                                                                        |
+| Green CI badge                                         | ✗ Pending                                    | README badge explicitly says not published; bind the real Actions badge after publication                                                                 |
+| Public GitHub repo / live frontend URL                 | ✗ Pending                                    | No remote or hosting destination supplied; Vercel configuration and commands documented                                                                   |
+| Compile, test and deployed-address screenshots         | ✗ Submission captures pending                | Actual logs provided; capture these plus the confirmed address for submission                                                                             |
+| One-minute demo video                                  | ✗ Pending                                    | `docs/DEMO.md` checklist                                                                                                                                  |
+| Selected idea and owner-authored proposal              | ✓ Idea selected; ✗ proposal approval pending | Age / Eligibility Gate; fill organizer placeholders in PROPOSAL.md and submit for approval                                                                |
+| User guide                                             | ✓ Implemented                                | `docs/USAGE.md`                                                                                                                                           |
 
 ## Privacy and product limits
 

@@ -1,50 +1,57 @@
 "use client";
 import Link from "next/link";
 import { useStore } from "@/components/provider";
-import { Empty } from "@/components/ui";
+import { Empty, Icon, PageHead, Status } from "@/components/ui";
 import { short } from "@/lib/gates";
 export default function Activity() {
   const { receipts, ready } = useStore();
   return (
     <>
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">Public results. Private evidence.</div>
-          <h1>Activity</h1>
-          <p>Confirmed verification receipts saved in this browser.</p>
-        </div>
-      </div>
+      <PageHead
+        kicker="The public record"
+        title="Proofs leave receipts."
+        description="Confirmed verification results saved in this browser. Your exact evidence never appears here."
+      />
       {!ready ? (
-        <p role="status">Restoring receipts…</p>
+        <p role="status" className="hint">
+          Restoring receipts…
+        </p>
       ) : receipts.length ? (
-        <>
+        <div className="activity-table" data-enter>
+          <div className="activity-labels" aria-hidden="true">
+            <span>Gate / time</span>
+            <span>Result / transaction</span>
+            <span />
+          </div>
           {receipts.map((r) => (
-            <div className="activity-row" key={r.txId}>
+            <article className="activity-row" key={r.txId}>
               <div>
                 <strong>{r.gateName}</strong>
                 <p className="hint">{new Date(r.time).toLocaleString()}</p>
               </div>
               <div>
-                <span className="badge">
+                <Status active={r.eligible}>
                   {r.eligible ? "Eligible" : "Not eligible"}
-                </span>
+                </Status>
                 <p className="mono" style={{ marginTop: 8 }}>
                   {short(r.txId)} · Block {r.blockHeight}
                 </p>
               </div>
               <Link href={`/verify/${r.gate}?receipt=${r.id}`}>
-                Check on chain ↗
+                View receipt
+                <Icon name="arrow" size={14} />
               </Link>
-            </div>
+            </article>
           ))}
-        </>
+        </div>
       ) : (
         <Empty
-          title="The proof leaves a receipt, not your evidence"
-          text="Your confirmed verification results will appear here. Exact values never do."
+          title="The answer has a record. The evidence doesn’t."
+          text="Confirmed proofs will appear here, with a link to check the result on Midnight."
         >
           <Link href="/gates" className="btn secondary">
-            Explore your gates ↗
+            Explore your gates
+            <Icon name="arrow" size={15} />
           </Link>
         </Empty>
       )}

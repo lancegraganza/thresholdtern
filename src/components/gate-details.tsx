@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useStore } from "./provider";
 import { useWallet } from "./wallet-provider";
-import { Button, Card, Field, Modal, Notice } from "./ui";
+import { Button, Field, Icon, Modal, Notice, PageHead, Status } from "./ui";
 import { Progress } from "./progress";
-import { gateStatus, policy } from "@/lib/gates";
-import { failure } from "@/lib/midnight/wallet";
+import { gateStatus, isAddress } from "@/lib/gates";
+import { failure, UserError } from "@/lib/midnight/wallet";
 import type { Gate, Stage } from "@/types/gate";
 export function GateDetails({ address }: { address: string }) {
   const { saveGate, toast } = useStore(),
-    { wallet, password, open } = useWallet();
+    { wallet, unlockStorage, open } = useWallet();
   const [gate, setGate] = useState<Gate | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
@@ -24,6 +24,10 @@ export function GateDetails({ address }: { address: string }) {
     setLoading(true);
     setError("");
     try {
+      if (!isAddress(address))
+        throw new UserError(
+          "This gate link is invalid. Ask the creator for the full share link.",
+        );
       const { readGate } = await import("@/lib/midnight/client");
       const g = await readGate(address);
       setGate(g);
@@ -51,7 +55,7 @@ export function GateDetails({ address }: { address: string }) {
     let submitted = false;
     try {
       const { makeClient } = await import("@/lib/midnight/client");
-      const client = await makeClient(wallet, password, (s, id) => {
+      const client = await makeClient(wallet, unlockStorage, (s, id) => {
         setStage(s);
         if (id) submitted = true;
       });
@@ -76,82 +80,111 @@ export function GateDetails({ address }: { address: string }) {
   }
   if (!gate)
     return (
-      <div className="wizard">
-        <h1 style={{ fontSize: 40 }}>Gate details</h1>
-        <div style={{ marginTop: 28 }}>
-          {loading ? (
-            <p role="status">Reading your gate from Midnight…</p>
-          ) : (
-            <>
-              <Notice error>{error}</Notice>
-              <div className="actions">
-                <Button onClick={refresh}>Try again</Button>
-                <Link href="/gates" className="btn secondary">
-                  Back to gates
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      <>
+        <PageHead
+          kicker="Gate management"
+          title="Gate details"
+          description="Reading the public requirement from Midnight."
+        />
+        {loading ? (
+          <div className="notice" role="status">
+            <span className="spinner" />
+            <span>Reading your gate…</span>
+          </div>
+        ) : (
+          <>
+            <Notice error>{error}</Notice>
+            <div className="actions">
+              <Button onClick={refresh}>Try again</Button>
+              <Link href="/gates" className="btn secondary">
+                Back to gates
+              </Link>
+            </div>
+          </>
+        )}
+      </>
     );
   return (
     <>
-      <div className="page-head">
-        <div>
-          <div className="eyebrow">
-            {gate.kind === 0 ? "Private age gate" : "Private numeric gate"}
-          </div>
-          <h1>{gate.name}</h1>
-          <p>
-            {policy(gate)} · {gateStatus(gate)}
-          </p>
-        </div>
-        <Button onClick={() => setSharing(true)}>Share gate ↗</Button>
-      </div>
-      <div className="grid">
-        <Card>
-          <div className="eyebrow">Requirement</div>
-          <div className="gate-policy" style={{ marginTop: 16 }}>
-            {policy(gate)}
-          </div>
-          <p className="hint" style={{ marginTop: 16 }}>
-            Self-asserted private value.
-          </p>
-        </Card>
-        <Card>
-          <div className="eyebrow">Eligible submissions</div>
-          <div className="gate-policy" style={{ marginTop: 16 }}>
-            {gate.successes}
-          </div>
-          <p className="hint" style={{ marginTop: 16 }}>
-            {gate.attempts} total confirmed submissions
-          </p>
-        </Card>
-        <Card>
-          <div className="eyebrow">Gate status</div>
-          <h3 style={{ marginTop: 20 }}>{gateStatus(gate)}</h3>
-          <p className="hint" style={{ marginTop: 16 }}>
-            {gate.expiresAt
-              ? `Expires ${new Date(gate.expiresAt * 1000).toLocaleString()}`
-              : "No scheduled expiry"}
-          </p>
-        </Card>
-      </div>
-      <div className="actions">
-        <Link href={`/verify/${address}`} className="btn secondary">
-          Open participant view ↗
-        </Link>
-        <Button
-          variant="secondary"
-          onClick={refresh}
-          disabled={loading || !!stage}
-        >
-          {loading ? "Refreshing…" : "Refresh chain state"}
+      <PageHead
+        kicker={gate.kind === 0 ? "Private age gate" : "Private threshold"}
+        title={gate.name}
+        description="A public boundary. A private way to meet it."
+      >
+        <Button onClick={() => setSharing(true)}>
+          <Icon name="external" size={15} />
+          Share gate
         </Button>
+      </PageHead>
+      <div className="detail-layout" data-enter>
+        <section className="policy-display">
+          <div className="eyebrow">THE REQUIREMENT</div>
+          <div className="gate-policy">
+            {gate.kind === 0 ? `${gate.minimum}+` : `≥ ${gate.minimum}`}
+          </div>
+          <p>
+            Participants prove{" "}
+            {gate.kind === 0 ? "their age" : "a private value"} meets this
+            boundary. You receive only eligible or not eligible.
+          </p>
+          <div style={{ marginTop: 25 }}>
+            <span className="hint" style={{ color: "#aaa3c7" }}>
+              Self-asserted values / Midnight Preprod
+            </span>
+          </div>
+        </section>
+        <section className="detail-facts" aria-label="Gate facts">
+          <div className="review-row">
+            <span>Status</span>
+            <Status active={gateStatus(gate) === "Active"}>
+              {gateStatus(gate)}
+            </Status>
+          </div>
+          <div className="review-row">
+            <span>Eligible submissions</span>
+            <strong>{gate.successes}</strong>
+          </div>
+          <div className="review-row">
+            <span>Total confirmed submissions</span>
+            <strong>{gate.attempts}</strong>
+          </div>
+          <div className="review-row">
+            <span>Expiry</span>
+            <strong>
+              {gate.expiresAt
+                ? new Date(gate.expiresAt * 1000).toLocaleString()
+                : "No scheduled expiry"}
+            </strong>
+          </div>
+          <div className="review-row">
+            <span>Private</span>
+            <strong>
+              {gate.kind === 0
+                ? "Exact age or birthdate"
+                : "Exact numeric value"}
+            </strong>
+          </div>
+        </section>
+      </div>
+      <div className="detail-actions">
+        <div className="actions" style={{ marginTop: 0 }}>
+          <Link href={`/verify/${address}`} className="btn secondary">
+            Participant view
+            <Icon name="arrow" size={15} />
+          </Link>
+          <Button
+            variant="text"
+            onClick={refresh}
+            disabled={loading || !!stage}
+          >
+            <Icon name="refresh" size={14} />
+            {loading ? "Refreshing…" : "Refresh state"}
+          </Button>
+        </div>
         {creator && gate.active && (
           <Button
-            variant="secondary"
+            className="danger-action"
+            variant="text"
             onClick={() => setConfirming(true)}
             disabled={!!stage || uncertain}
           >
@@ -165,20 +198,21 @@ export function GateDetails({ address }: { address: string }) {
         </div>
       )}
       {uncertain && (
-        <Notice>
-          A close transaction was submitted. Refresh chain state before trying
-          another action.
-        </Notice>
+        <div style={{ marginTop: 24 }}>
+          <Notice>
+            A close transaction was submitted. Refresh chain state before trying
+            another action.
+          </Notice>
+        </div>
       )}
       {stage && <Progress stage={stage} />}
-      <div className="divider" />
-      <Notice>
-        The verifier receives eligibility, not exact age or evidence. Submission
-        counts do not represent unique people.
-      </Notice>
       <details>
-        <summary>View technical details</summary>
+        <summary>Contract & privacy details</summary>
         <p className="mono">Preprod contract: {address}</p>
+        <p className="hint">
+          Counts describe submissions, not unique people. The verifier receives
+          the result, never the private witness.
+        </p>
         <a
           href="https://preprod.midnightexplorer.com/"
           target="_blank"
@@ -190,10 +224,11 @@ export function GateDetails({ address }: { address: string }) {
       <Modal
         open={sharing}
         onClose={() => setSharing(false)}
-        title="Share this gate"
+        title="Share the passage"
       >
-        <p className="muted" style={{ fontSize: 13 }}>
-          Anyone with this link can privately prove they meet the requirement.
+        <p className="hint">
+          Send this link. Participants can prove the requirement with their own
+          wallet and private evidence.
         </p>
         <Field id="share-url" label="Participant link">
           <input
@@ -203,7 +238,10 @@ export function GateDetails({ address }: { address: string }) {
             onFocus={(e) => e.target.select()}
           />
         </Field>
-        <Button onClick={copy}>Copy link</Button>
+        <Button onClick={copy}>
+          <Icon name="copy" size={15} />
+          Copy link
+        </Button>
       </Modal>
       <Modal
         open={confirming}
@@ -211,14 +249,15 @@ export function GateDetails({ address }: { address: string }) {
         title="Close this gate?"
       >
         <p className="muted">
-          New verifications will stop after the transaction confirms. This
-          cannot be undone.
+          New verifications stop once Midnight confirms the transaction. Closing
+          a gate is permanent.
         </p>
         <div className="actions">
           <Button onClick={close}>
             {wallet ? "Close gate on Midnight" : "Connect wallet"}
+            <Icon name="arrow" size={15} />
           </Button>
-          <Button variant="secondary" onClick={() => setConfirming(false)}>
+          <Button variant="text" onClick={() => setConfirming(false)}>
             Keep open
           </Button>
         </div>

@@ -1,5 +1,5 @@
 "use client";
-import { Button, Notice } from "@/components/ui";
+import { Brand, Button, Icon, Notice } from "@/components/ui";
 export default function ErrorPage({
   reset,
 }: {
@@ -7,8 +7,10 @@ export default function ErrorPage({
   reset: () => void;
 }) {
   return (
-    <main className="participant" style={{ paddingTop: 80 }}>
-      <h1 style={{ fontSize: 40 }}>Your workspace needs a refresh.</h1>
+    <main className="error-page">
+      <Brand />
+      <div className="eyebrow">WORKSPACE / RECOVERY</div>
+      <h1>Let’s reopen this passage.</h1>
       <div style={{ marginTop: 24 }}>
         <Notice>
           A page could not finish loading. Your private evidence has not been
@@ -17,7 +19,9 @@ export default function ErrorPage({
         </Notice>
       </div>
       <div className="actions">
-        <Button onClick={reset}>Try loading again</Button>
+        <Button onClick={reset}>
+          Try loading again <Icon name="refresh" size={16} />
+        </Button>
       </div>
     </main>
   );

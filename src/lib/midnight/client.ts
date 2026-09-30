@@ -34,6 +34,7 @@ const HTTP = "https://indexer.preprod.midnight.network/api/v4/graphql";
 const WS = "wss://indexer.preprod.midnight.network/api/v4/graphql/ws";
 type State = { admin: Uint8Array };
 type Circuit = "verify" | "close";
+const PENDING_SCOPE = "0".repeat(64);
 export type Progress = (stage: Stage, txId?: string) => void;
 function dataProvider() {
   setNetworkId("preprod");
@@ -114,17 +115,22 @@ export async function readReceipt(
 }
 export async function makeClient(
   wallet: Wallet,
-  password: string,
+  password: string | (() => Promise<string>),
   onProgress: Progress,
   privateInput?: bigint,
 ) {
-  try {
-    validatePassword(password);
-  } catch {
-    throw new UserError(
-      "Use a local privacy password with 16+ characters, uppercase, lowercase and numbers, without simple repeated patterns.",
-    );
-  }
+  // Storage unlock is separate from wallet authorization and requested lazily.
+  const storagePassword = async () => {
+    const secret = typeof password === "string" ? password : await password();
+    try {
+      validatePassword(secret);
+    } catch {
+      throw new UserError(
+        "Unlock local storage with your existing encryption password before continuing.",
+      );
+    }
+    return secret;
+  };
   const status = await wallet.api.getConnectionStatus();
   if (status.status !== "connected" || status.networkId !== "preprod")
     throw new UserError(
@@ -134,7 +140,7 @@ export async function makeClient(
   const privateStateProvider = levelPrivateStateProvider<string, State>({
     accountId: wallet.address,
     midnightDbName: "thresholdtern-preprod-v1",
-    privateStoragePasswordProvider: () => password,
+    privateStoragePasswordProvider: storagePassword,
   });
   const witnesses: Witnesses<State> = {
     privateValue: ({ privateState }) => {
@@ -213,15 +219,16 @@ export async function makeClient(
       if (error) throw new UserError(error);
       const privateStateId = `creator-${crypto.randomUUID()}`;
       const admin = crypto.getRandomValues(new Uint8Array(32));
-      localStorage.setItem(
-        "thresholdtern:pending-creator-state",
-        privateStateId,
-      );
       const title = new Uint8Array(64);
       title.set(new TextEncoder().encode(draft.name.trim()));
       // Persist creator recovery before sending any transaction. The private
       // value is a closure only and is never passed to this encrypted store.
+      privateStateProvider.setContractAddress(PENDING_SCOPE);
       await privateStateProvider.set(privateStateId, { admin });
+      localStorage.setItem(
+        "thresholdtern:pending-creator-state",
+        privateStateId,
+      );
       const deployed = await deployContract(providers, {
         compiledContract,
         privateStateId,
@@ -296,20 +303,28 @@ export async function makeClient(
         "thresholdtern:pending-creator-state",
       );
       if (!privateStateId) return false;
-      const state = await privateStateProvider.get(privateStateId);
+      privateStateProvider.setContractAddress(address);
+      let state = await privateStateProvider.get(privateStateId);
+      if (!state) {
+        privateStateProvider.setContractAddress(PENDING_SCOPE);
+        state = await privateStateProvider.get(privateStateId);
+      }
       if (!state)
         throw new UserError(
           "The creator secret is unavailable for this wallet and password.",
         );
       const publicState = await dataProvider().queryContractState(address);
       if (!publicState) throw new UserError("This gate is not confirmed yet.");
-      const { persistentHash, CompactTypeBytes } =
-        await import("@midnight-ntwrk/compact-runtime");
+      const { persistentHash, CompactTypeBytes } = await import(
+        "@midnight-ntwrk/compact-runtime"
+      );
       const expected = persistentHash(new CompactTypeBytes(32), state.admin);
       if (toHex(expected) !== toHex(ledger(publicState.data).adminHash))
         throw new UserError(
           "This address does not match the pending creator secret.",
         );
+      privateStateProvider.setContractAddress(address);
+      await privateStateProvider.set(privateStateId, state);
       localStorage.setItem(`thresholdtern:creator:${address}`, privateStateId);
       localStorage.removeItem("thresholdtern:pending-creator-state");
       localStorage.removeItem("thresholdtern:pending-deploy");

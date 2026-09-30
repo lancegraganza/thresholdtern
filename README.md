@@ -10,8 +10,8 @@ Pending frontend deployment. Local application: `http://localhost:3000`.
 
 ## Contract Address
 
-| Network | Address |
-| ------- | ------- |
+| Network | Address                                                       |
+| ------- | ------------------------------------------------------------- |
 | Preprod | **Pending wallet-authorized deployment — no address claimed** |
 
 Each published gate has its own contract address and share URL. Run `npm run deploy:preprod` with the local app running, then publish through the gate wizard in the browser with Lace. Paste the confirmed address back into the chat to bind this README to real deployment evidence.
@@ -39,6 +39,8 @@ The local proof server receives proof preimages containing private witnesses. It
 ## Tech Stack
 
 Next.js 16 App Router, React 19, TypeScript, Tailwind 4, Compact compiler 0.31.1 (language 0.23), compact-runtime 0.16.0, Midnight.js 4.1.1, ledger-v8 8.1.0, DApp Connector 4.0.1 and a local proof server 8.1.0. Versions are matched to the ledger-v8 SDK and generated artifacts.
+
+The interface uses the supplied tern logo, locally hosted Manrope and Space Grotesk fonts, and scoped GSAP motion with reduced-motion support. See the [redesign direction](docs/REDESIGN.md) and [browser review](docs/evidence/REDESIGN-REVIEW.md).
 
 ## Prerequisites
 
@@ -83,7 +85,7 @@ The organizer's historical npm compiler install is replaced with the actual [off
    npm run dev
    ```
 
-6. Open `http://localhost:3000` in the browser with Lace installed. Your wallet explicitly connects to Preprod. The app checks the actual connection status before a transaction.
+6. Open `http://localhost:3000` in the browser with Lace installed. Your wallet explicitly connects to Preprod without a local password. Operations using encrypted local keys request a separate storage unlock; use your existing encryption password for creator recovery. The app checks the actual connection status before a transaction.
 7. Publish your first gate:
 
    ```sh

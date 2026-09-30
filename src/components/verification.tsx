@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Brand, Button, Card, Field, Notice } from "./ui";
+import { Brand, Button, Card, Field, Icon, Notice } from "./ui";
 import { useWallet, WalletButton } from "./wallet-provider";
 import { useStore } from "./provider";
+import { Motion } from "./motion";
 import { Progress } from "./progress";
 import { gateStatus, isAddress, policy, validateValue } from "@/lib/gates";
 import { failure, UserError } from "@/lib/midnight/wallet";
@@ -16,7 +17,7 @@ export function Verification({
   address: string;
   receiptId?: string;
 }) {
-  const { wallet, password, open } = useWallet(),
+  const { wallet, unlockStorage, open } = useWallet(),
     { saveGate, saveReceipt } = useStore();
   const [gate, setGate] = useState<Gate | null>(null),
     [loading, setLoading] = useState(true),
@@ -32,6 +33,10 @@ export function Verification({
     let mounted = true;
     async function load() {
       try {
+        if (!isAddress(address))
+          throw new UserError(
+            "This gate link is invalid. Ask the creator for the full share link.",
+          );
         const { readGate, readReceipt } = await import("@/lib/midnight/client");
         const next = await readGate(address);
         if (!mounted) return;
@@ -117,7 +122,7 @@ export function Verification({
       const { makeClient, readGate } = await import("@/lib/midnight/client");
       const client = await makeClient(
         wallet,
-        password,
+        unlockStorage,
         (s, txId) => {
           setStage(s);
           if (s === "submitting") {
@@ -162,22 +167,38 @@ export function Verification({
         <Brand />
         <WalletButton />
       </header>
+      <div className="participant-bar">
+        <Link href="/">
+          <Icon name="shield" size={14} />
+          Private verification
+        </Link>
+        <span className="network-label">
+          <span />
+          Midnight Preprod
+        </span>
+      </div>
       <div className="verify-layout">
-        <section>
-          <div className="eyebrow">A private way through</div>
+        <section className="verify-context">
+          <div className="eyebrow">
+            THE PASSAGE /{" "}
+            {gate
+              ? gateStatus(gate).toUpperCase()
+              : loading
+                ? "READING REQUIREMENT"
+                : "GATE UNAVAILABLE"}
+          </div>
           <h1>{gate?.name || "Private eligibility"}</h1>
           {gate ? (
             <>
-              <span className="badge">
-                {gateStatus(gate)} · Midnight Preprod
-              </span>
-              <p className="muted" style={{ marginTop: 28 }}>
+              <div className="verify-policy">
+                {gate.kind === 0 ? `${gate.minimum}+` : `≥ ${gate.minimum}`}
+              </div>
+              <p className="muted">
                 Prove{" "}
                 {gate.kind === 0
-                  ? "you are at least"
-                  : "your private value is at least"}{" "}
-                <strong style={{ color: "var(--ink)" }}>{gate.minimum}</strong>{" "}
-                without revealing{" "}
+                  ? "you meet the age requirement"
+                  : "your value meets the threshold"}
+                , without revealing{" "}
                 {gate.kind === 0
                   ? "your exact age or birthdate"
                   : "the exact value"}
@@ -192,184 +213,255 @@ export function Verification({
                 <span>The verifier learns</span>
                 <strong>Eligible / Not eligible</strong>
               </div>
-              <p className="hint" style={{ marginTop: 24 }}>
-                This proof uses a self-asserted value. A trusted issuer is
-                needed to certify real age or credentials.
+              <p className="hint" style={{ marginTop: 20 }}>
+                A proof of a self-asserted value. A trusted issuer is needed to
+                certify actual age or credentials.
               </p>
             </>
           ) : (
-            <p className="muted">Reading the requirement from Midnight.</p>
+            <p className="muted" style={{ marginTop: 20 }}>
+              {loading
+                ? "Reading the requirement from Midnight."
+                : "A valid, confirmed gate is needed to verify."}
+            </p>
           )}
         </section>
         <Card className="verify-form">
-          {result !== null ? (
-            <>
-              <div className="result-symbol">{result ? "✓" : "—"}</div>
-              <h2>
-                {continued
-                  ? "You’re through."
-                  : result
-                    ? "Eligibility verified."
-                    : "Requirement not satisfied."}
-              </h2>
-              <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>
-                {result
-                  ? "✓ Requirement satisfied"
-                  : "The private value did not meet this gate’s threshold."}
-                <br />✓ Exact details were not revealed
-              </p>
-              {result && !continued && (
-                <div className="actions">
-                  <Button onClick={() => setContinued(true)}>Continue ↗</Button>
+          <Motion
+            watch={
+              result !== null
+                ? `result-${continued}`
+                : stage
+                  ? "proving"
+                  : loading
+                    ? "loading"
+                    : pending
+                      ? "pending"
+                      : "input"
+            }
+          >
+            {result !== null ? (
+              <>
+                <div className="result-symbol">
+                  {result ? <Icon name="check" size={26} /> : "—"}
                 </div>
-              )}
-              {continued && (
-                <Notice>
-                  Your confirmed proof satisfies this gate. The creator can
-                  check the public receipt.
-                </Notice>
-              )}
-              {!result && (
-                <div className="actions">
-                  <Link href="/" className="btn secondary">
-                    Return home
-                  </Link>
-                </div>
-              )}
-              <details>
-                <summary>View technical details</summary>
-                <p className="mono">Contract: {address}</p>
-                <p className="mono">
-                  Receipt:{" "}
-                  {receipt?.id ||
-                    receiptId ||
-                    "Recovered from pending submission"}
+                <div className="eyebrow">CONFIRMED ON MIDNIGHT</div>
+                <h2>
+                  {continued
+                    ? "You’re through."
+                    : result
+                      ? "Eligibility verified."
+                      : "Outside this boundary."}
+                </h2>
+                <p className="muted" style={{ marginTop: 18, fontSize: 12 }}>
+                  {result
+                    ? "The requirement was satisfied."
+                    : "The private value did not meet this gate’s threshold."}
+                  <br />
+                  Your exact details were not revealed.
                 </p>
-                {receipt && (
-                  <>
-                    <p className="mono">Transaction: {receipt.txId}</p>
-                    <p>Confirmed block: {receipt.blockHeight}</p>
-                  </>
+                {result && !continued && (
+                  <div className="actions">
+                    <Button onClick={() => setContinued(true)}>
+                      Continue
+                      <Icon name="arrow" />
+                    </Button>
+                  </div>
                 )}
-                <p className="hint">
-                  Only the boolean is public. This screen is a proof receipt,
-                  not a server-side content authorization system.
-                </p>
-              </details>
-            </>
-          ) : stage ? (
-            <>
-              <h2>Keeping it private.</h2>
-              <Progress stage={stage} txId={pending?.txId} />
-              <p className="hint">
-                You may need to approve a request in your wallet. Keep this tab
-                open until confirmed.
-              </p>
-            </>
-          ) : loading ? (
-            <p role="status">
-              {pending ? "Checking your receipt…" : "Loading the gate…"}
-            </p>
-          ) : pending ? (
-            <>
-              <h2>Waiting for confirmation.</h2>
-              <p className="muted" style={{ marginTop: 16, fontSize: 13 }}>
-                Your submission may still be in flight. Check its public receipt
-                before trying another transaction.
-              </p>
-              <div className="actions">
-                <Button onClick={reconcile}>Check result on Midnight</Button>
-              </div>
-              <details>
-                <summary>View technical details</summary>
-                <p className="mono">Receipt: {pending.id}</p>
-                <p className="mono">
-                  Transaction: {pending.txId || "Awaiting wallet response"}
-                </p>
-              </details>
-            </>
-          ) : gate && gateStatus(gate) !== "Active" ? (
-            <>
-              <h2>This gate is {gateStatus(gate).toLowerCase()}.</h2>
-              <p className="muted" style={{ marginTop: 18 }}>
-                Ask the creator for a new active gate.
-              </p>
-            </>
-          ) : gate ? (
-            <>
-              <div className="eyebrow">Your evidence stays yours</div>
-              <h2 style={{ marginTop: 16 }}>Verify privately.</h2>
-              {!wallet ? (
-                <>
-                  <p className="muted" style={{ marginTop: 18, fontSize: 13 }}>
-                    Connect a Preprod wallet to get started.
-                  </p>
-                  <div className="actions">
-                    <Button onClick={open}>Connect wallet ↗</Button>
+                {continued && (
+                  <div style={{ marginTop: 24 }}>
+                    <Notice>
+                      Your confirmed proof satisfies this gate. The creator can
+                      check the public receipt.
+                    </Notice>
                   </div>
-                </>
-              ) : (
-                <>
-                  <Field
-                    id="private-value"
-                    label={
-                      gate.kind === 0
-                        ? "Your age (private)"
-                        : "Your value (private)"
-                    }
-                    hint="Held in memory only. Never saved, logged, or sent to the website server."
-                  >
-                    <input
-                      id="private-value"
-                      type="password"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      value={value}
-                      onChange={(e) => setValue(e.target.value)}
-                      aria-describedby={`private-value-hint${error ? " verification-error" : ""}`}
-                      aria-invalid={!!error && !pending}
-                    />
-                  </Field>
+                )}
+                {!result && (
+                  <div className="actions">
+                    <Link href="/" className="btn secondary">
+                      Return home
+                      <Icon name="arrow" size={15} />
+                    </Link>
+                  </div>
+                )}
+                <details>
+                  <summary>View proof receipt</summary>
+                  <p className="mono">Contract: {address}</p>
+                  <p className="mono">
+                    Receipt:{" "}
+                    {receipt?.id ||
+                      receiptId ||
+                      "Recovered from pending submission"}
+                  </p>
+                  {receipt && (
+                    <>
+                      <p className="mono">Transaction: {receipt.txId}</p>
+                      <p>Confirmed block: {receipt.blockHeight}</p>
+                    </>
+                  )}
                   <p className="hint">
-                    Your local proof server processes the evidence on your
-                    machine.
+                    Only the boolean is public. This receipt does not enforce
+                    server-side content access.
                   </p>
-                  <div className="actions">
-                    <Button onClick={verify}>Generate private proof ↗</Button>
-                  </div>
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <h2>Gate unavailable.</h2>
-              <p className="muted" style={{ marginTop: 18 }}>
-                Check the link with the creator.
-              </p>
-              <div className="actions">
-                <Button
-                  variant="secondary"
-                  onClick={() => window.location.reload()}
-                >
-                  Try again
-                </Button>
+                </details>
+              </>
+            ) : stage ? (
+              <>
+                <div className="eyebrow">PRIVATE PROOF IN PROGRESS</div>
+                <h2>One answer. No evidence.</h2>
+                <Progress stage={stage} txId={pending?.txId} />
+                <p className="hint">
+                  Approve any wallet request. Keep this tab open until the
+                  transaction is confirmed.
+                </p>
+              </>
+            ) : loading ? (
+              <div className="wallet-intro" role="status">
+                <span className="spinner" />
+                <p>
+                  {pending ? "Checking your receipt…" : "Loading the gate…"}
+                </p>
               </div>
-            </>
-          )}
-          {error && (
-            <div style={{ marginTop: 24 }}>
-              <Notice id="verification-error" error>
-                {error}
-              </Notice>
-            </div>
-          )}
+            ) : pending ? (
+              <>
+                <div className="eyebrow">AWAITING MIDNIGHT</div>
+                <h2>Confirmation takes a moment.</h2>
+                <p className="hint" style={{ marginTop: 16 }}>
+                  Your submission may still be in flight. Check the public
+                  receipt before trying another transaction.
+                </p>
+                <div className="actions">
+                  <Button onClick={reconcile}>
+                    Check the result
+                    <Icon name="refresh" size={15} />
+                  </Button>
+                </div>
+                <details>
+                  <summary>View submission details</summary>
+                  <p className="mono">Receipt: {pending.id}</p>
+                  <p className="mono">
+                    Transaction: {pending.txId || "Awaiting wallet response"}
+                  </p>
+                </details>
+              </>
+            ) : gate && gateStatus(gate) !== "Active" ? (
+              <>
+                <div className="result-symbol">
+                  <Icon name="lock" size={23} />
+                </div>
+                <h2>This gate is {gateStatus(gate).toLowerCase()}.</h2>
+                <p className="hint" style={{ marginTop: 18 }}>
+                  Ask the creator for a new active gate.
+                </p>
+              </>
+            ) : gate ? (
+              <>
+                <div className="proof-input-heading">
+                  <span className="eyebrow" style={{ marginBottom: 0 }}>
+                    YOUR PRIVATE PROOF
+                  </span>
+                  <span className="hint">
+                    {wallet ? "02 / EVIDENCE" : "01 / CONNECT"}
+                  </span>
+                </div>
+                <h2>
+                  {wallet ? "Only you need the details." : "Your way through."}
+                </h2>
+                {!wallet ? (
+                  <>
+                    <p className="hint" style={{ marginTop: 16 }}>
+                      Connect a Preprod wallet to authorize your private proof.
+                    </p>
+                    <div className="actions">
+                      <Button onClick={open}>
+                        <Icon name="wallet" size={16} />
+                        Connect wallet
+                      </Button>
+                    </div>
+                    <div className="verify-private-note">
+                      <Icon name="lock" size={13} />
+                      No local password needed to connect.
+                    </div>
+                  </>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void verify();
+                    }}
+                  >
+                    <Field
+                      id="private-value"
+                      label={
+                        gate.kind === 0
+                          ? "Your age (private)"
+                          : "Your value (private)"
+                      }
+                      hint="Memory only. Never saved, logged or sent to this website’s server."
+                    >
+                      <input
+                        id="private-value"
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        aria-describedby={`private-value-hint${error ? " verification-error" : ""}`}
+                        aria-invalid={!!error && !pending}
+                      />
+                    </Field>
+                    <div className="verify-private-note">
+                      <Icon name="shield" size={14} />
+                      Your local proof server processes the evidence on your
+                      machine.
+                    </div>
+                    <div className="actions">
+                      <Button type="submit">
+                        Generate private proof
+                        <Icon name="arrow" size={16} />
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="result-symbol">
+                  <Icon name="gate" size={24} />
+                </div>
+                <h2>This passage is unavailable.</h2>
+                <p className="hint" style={{ marginTop: 18 }}>
+                  Check the share link with the creator.
+                </p>
+                <div className="actions">
+                  <Button
+                    variant="secondary"
+                    onClick={() => window.location.reload()}
+                  >
+                    <Icon name="refresh" size={15} />
+                    Try again
+                  </Button>
+                </div>
+              </>
+            )}
+            {error && (
+              <div style={{ marginTop: 24 }}>
+                <Notice id="verification-error" error>
+                  {error}
+                </Notice>
+              </div>
+            )}
+          </Motion>
         </Card>
       </div>
       <footer>
         <span>
-          ThresholdTern — prove eligibility without revealing the evidence.
+          ThresholdTern / Proof opens the door. Privacy comes with you.
         </span>
-        <Link href="/">About ThresholdTern ↗</Link>
+        <Link href="/">
+          About ThresholdTern
+          <Icon name="arrow" size={13} />
+        </Link>
       </footer>
     </main>
   );

@@ -6,17 +6,17 @@
 - Spendable Preprod funds and DUST. Complete wallet sync after using the faucet.
 - ThresholdTern running locally, or its eventual published demo URL.
 - The local proof server running on your own machine. Ask the person helping with setup to run `npm run proof:up`. Private evidence goes to this local service, so use your own machine.
-- A local privacy password with 16 or more characters, uppercase, lowercase and numbers. Keep it for future visits; it unlocks encrypted creator secrets in this browser.
+- Wallet connection does not require a local password. Operations that need Midnight's encrypted local keys ask for a separate storage unlock: 16+ characters, uppercase, lowercase and numbers. Use the original password for existing creator secrets.
 
 ## Step-by-Step Guide
 
 ### Create and share a gate
 
-1. Select **Enter ThresholdTern**, then **Create gate**.
+1. Select **Open workspace**, then **Create gate**.
 2. Choose **18+**, **21+**, or a custom numeric threshold.
 3. Give the gate a public name. Choose an optional expiry.
 4. Review what users prove, what you receive, and what stays private.
-5. Connect your wallet on Preprod and choose **Publish gate on Midnight**. Approve the wallet request.
+5. Connect your wallet on Preprod and choose **Publish gate**. Unlock local encrypted storage if requested, then approve the wallet request. Storage unlock is separate from connection.
 6. Wait for confirmed deployment. Open the gate details, select **Share gate**, and copy the participant link.
 7. Return to gate details to refresh confirmed submission counts. **Close gate** permanently stops future submissions; it requires the original browser, wallet and password.
 
@@ -25,10 +25,10 @@
 1. Open the creator's participant link. Check the requirement and gate status.
 2. Connect your Preprod wallet.
 3. Enter your private age or value. The field conceals it; it is held only in memory.
-4. Select **Generate private proof**. Your local proof server generates the proof, and the wallet authorizes the transaction.
-5. Wait for Midnight confirmation. The page shows **Eligibility verified** or **Requirement not satisfied**, according to the chain receipt.
+4. Select **Generate private proof**. Unlock Midnight's local key storage if requested. Your local proof server generates the proof, and the wallet authorizes the transaction.
+5. Wait for Midnight confirmation. The page shows **Eligibility verified** or **Outside this boundary**, according to the chain receipt.
 6. If eligible, select **Continue**. This is a proof receipt; a real protected-content service must separately authenticate and bind a receipt to its visitor.
-7. **View technical details** shows the public receipt, transaction and confirmed block. It never shows your private value.
+7. **View proof receipt** shows the public receipt, transaction and confirmed block. It never shows your private value.
 
 ## What Gets Proved (and What Stays Private)
 
