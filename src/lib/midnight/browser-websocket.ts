@@ -1,2 +1,2 @@
-export const WebSocket=globalThis.WebSocket;
+export const WebSocket = globalThis.WebSocket;
 export default globalThis.WebSocket;

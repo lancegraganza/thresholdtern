@@ -1,10 +1,134 @@
-import Link from 'next/link';
-import { Brand } from '@/components/ui';
+import Link from "next/link";
+import { Brand } from "@/components/ui";
 export default function Landing() {
-  return <main className="landing"><header className="landing-nav"><Brand/><nav aria-label="Main navigation"><a href="#how">How it works</a><a href="#privacy">Privacy</a><Link href="/dashboard" className="btn secondary">Enter app <span aria-hidden="true">↗</span></Link></nav></header>
-    <section className="hero"><div><div className="eyebrow">A little proof. A lot of privacy.</div><h1>Prove the<br/>requirement.<br/><span className="muted">Keep the details<br/>private.</span></h1><p className="muted">Open the right doors without sharing more than you need to. Private eligibility, verified on Midnight.</p><div className="actions"><Link href="/dashboard" className="btn">Enter ThresholdTern <span aria-hidden="true">↗</span></Link></div><p className="footnote muted">Built on Midnight · Preprod network</p></div>
-    <div className="proof-art" aria-label="Illustration: private evidence produces only an eligible result"><div className="private-card"><div className="eyebrow" style={{color:'#f5f4ee90'}}>Your evidence · stays with you</div><div className="concealed" aria-hidden="true">•• •• ••••</div><div style={{fontSize:12,color:'#f5f4ee90'}}>The details are yours to keep.</div></div><div className="result-card"><div className="eyebrow">All the verifier needs</div><h3 style={{fontFamily:'Georgia',fontSize:27,marginTop:10}}>✓ &nbsp;18+ requirement satisfied</h3><p style={{fontSize:11,marginTop:8}}>Proof verified. Evidence undisclosed.</p></div><span className="art-caption">ILLUSTRATIVE PRIVACY FLOW</span></div></section>
-    <section id="how" className="section"><div className="section-head"><div><div className="eyebrow" style={{marginBottom:16}}>Small steps. Less exposure.</div><h2>A clear path through.</h2></div><span className="hint">From a requirement to a private yes.</span></div><div className="grid">{[['01','Create a gate','Choose the requirement. Set the boundary. Share a single link.'],['02','Prove privately','Connect your wallet and prove a private value meets the requirement.'],['03','Receive a result','Midnight verifies the proof. The gate receives only eligible or not eligible.']].map(([n,t,p])=><div className="how-card" key={n}><div className="number">{n} —</div><h3>{t}</h3><p>{p}</p></div>)}</div></section>
-    <section id="privacy" className="privacy-band"><div><div className="eyebrow" style={{color:'var(--accent)',marginBottom:16}}>Privacy by intention</div><h2>The answer.<br/>Without the evidence.</h2><p>Your exact value is kept out of the public ledger. ThresholdTern currently proves self-asserted values; trusted age credentials are a future step.</p></div><Link href="/gates/new" className="btn accent">Create your first gate ↗</Link></section>
-    <footer><Brand/><span>Prove eligibility without revealing the evidence.</span><span>Midnight · Preprod</span></footer></main>;
+  return (
+    <main className="landing">
+      <header className="landing-nav">
+        <Brand />
+        <nav aria-label="Main navigation">
+          <a href="#how">How it works</a>
+          <a href="#privacy">Privacy</a>
+          <Link href="/dashboard" className="btn secondary">
+            Enter app <span aria-hidden="true">↗</span>
+          </Link>
+        </nav>
+      </header>
+      <section className="hero">
+        <div>
+          <div className="eyebrow">A little proof. A lot of privacy.</div>
+          <h1>
+            Prove the
+            <br />
+            requirement.
+            <br />
+            <span className="muted">
+              Keep the details
+              <br />
+              private.
+            </span>
+          </h1>
+          <p className="muted">
+            Open the right doors without sharing more than you need to. Private
+            eligibility, verified on Midnight.
+          </p>
+          <div className="actions">
+            <Link href="/dashboard" className="btn">
+              Enter ThresholdTern <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
+          <p className="footnote muted">Built on Midnight · Preprod network</p>
+        </div>
+        <div
+          className="proof-art"
+          aria-label="Illustration: private evidence produces only an eligible result"
+        >
+          <div className="private-card">
+            <div className="eyebrow" style={{ color: "#f5f4ee90" }}>
+              Your evidence · stays with you
+            </div>
+            <div className="concealed" aria-hidden="true">
+              •• •• ••••
+            </div>
+            <div style={{ fontSize: 12, color: "#f5f4ee90" }}>
+              The details are yours to keep.
+            </div>
+          </div>
+          <div className="result-card">
+            <div className="eyebrow">All the verifier needs</div>
+            <h3 style={{ fontFamily: "Georgia", fontSize: 27, marginTop: 10 }}>
+              ✓ &nbsp;18+ requirement satisfied
+            </h3>
+            <p style={{ fontSize: 11, marginTop: 8 }}>
+              Proof verified. Evidence undisclosed.
+            </p>
+          </div>
+          <span className="art-caption">ILLUSTRATIVE PRIVACY FLOW</span>
+        </div>
+      </section>
+      <section id="how" className="section">
+        <div className="section-head">
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 16 }}>
+              Small steps. Less exposure.
+            </div>
+            <h2>A clear path through.</h2>
+          </div>
+          <span className="hint">From a requirement to a private yes.</span>
+        </div>
+        <div className="grid">
+          {[
+            [
+              "01",
+              "Create a gate",
+              "Choose the requirement. Set the boundary. Share a single link.",
+            ],
+            [
+              "02",
+              "Prove privately",
+              "Connect your wallet and prove a private value meets the requirement.",
+            ],
+            [
+              "03",
+              "Receive a result",
+              "Midnight verifies the proof. The gate receives only eligible or not eligible.",
+            ],
+          ].map(([n, t, p]) => (
+            <div className="how-card" key={n}>
+              <div className="number">{n} —</div>
+              <h3>{t}</h3>
+              <p>{p}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section id="privacy" className="privacy-band">
+        <div>
+          <div
+            className="eyebrow"
+            style={{ color: "var(--accent)", marginBottom: 16 }}
+          >
+            Privacy by intention
+          </div>
+          <h2>
+            The answer.
+            <br />
+            Without the evidence.
+          </h2>
+          <p>
+            Your exact value is kept out of the public ledger. ThresholdTern
+            currently proves self-asserted values; trusted age credentials are a
+            future step.
+          </p>
+        </div>
+        <Link href="/gates/new" className="btn accent">
+          Create your first gate ↗
+        </Link>
+      </section>
+      <footer>
+        <Brand />
+        <span>Prove eligibility without revealing the evidence.</span>
+        <span>Midnight · Preprod</span>
+      </footer>
+    </main>
+  );
 }
