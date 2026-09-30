@@ -5,7 +5,7 @@ import { httpClientProofProvider } from '@midnight-ntwrk/midnight-js-http-client
 import { indexerPublicDataProvider } from '@midnight-ntwrk/midnight-js-indexer-public-data-provider';
 import { levelPrivateStateProvider } from '@midnight-ntwrk/midnight-js-level-private-state-provider';
 import { setNetworkId } from '@midnight-ntwrk/midnight-js-network-id';
-import { CompiledContract } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
+import { CompiledContract, CompactContext } from '@midnight-ntwrk/midnight-js-protocol/compact-js';
 import { Transaction } from '@midnight-ntwrk/midnight-js-protocol/ledger';
 import type { MidnightProviders, WalletProvider, MidnightProvider } from '@midnight-ntwrk/midnight-js-types';
 import { fromHex,toHex,validatePassword } from '@midnight-ntwrk/midnight-js-utils';
@@ -46,7 +46,8 @@ export async function makeClient(wallet:Wallet,password:string,onProgress:Progre
     privateValue:({privateState})=>{if(privateInput===undefined)throw new UserError('Enter your private value again.');return [privateState,privateInput];},
     administrationSecret:({privateState})=>[privateState,privateState.admin]
   };
-  const compiledContract=CompiledContract.withCompiledFileAssets(CompiledContract.withWitnesses(CompiledContract.make<Contract<State>,State>('thresholdtern',Contract),witnesses),'/zk/thresholdtern');
+  const witnessed=CompiledContract.withWitnesses<Contract<State>,State,CompiledContract.CompiledContract.Context<Contract<State>>>(CompiledContract.make<Contract<State>,State>('thresholdtern',Contract),witnesses);
+  const compiledContract=CompiledContract.withCompiledFileAssets<Contract<State>,State,CompactContext.CompiledAssetsPath>(witnessed,'/zk/thresholdtern');
   const zkConfigProvider=new FetchZkConfigProvider<Circuit>(`${window.location.origin}/zk/thresholdtern`);
   const baseProof=httpClientProofProvider('http://127.0.0.1:6302',zkConfigProvider);
   const adapter:WalletProvider&MidnightProvider={
