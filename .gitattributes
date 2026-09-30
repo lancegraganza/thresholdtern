@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.wasm binary
+*.prover binary
+*.verifier binary
+*.bzkir binary

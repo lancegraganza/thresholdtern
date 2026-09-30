@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.env*
+!.env.example
+.local/
+test-results/
+playwright-report/
+*.tsbuildinfo
+.agent/
+.agents/
+.codex/
+public/zk/
