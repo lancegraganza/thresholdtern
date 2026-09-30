@@ -46,7 +46,7 @@ export async function makeClient(wallet:Wallet,password:string,onProgress:Progre
     privateValue:({privateState})=>{if(privateInput===undefined)throw new UserError('Enter your private value again.');return [privateState,privateInput];},
     administrationSecret:({privateState})=>[privateState,privateState.admin]
   };
-  const compiledContract=CompiledContract.withCompiledFileAssets(CompiledContract.withWitnesses(CompiledContract.make<Contract<State>>('thresholdtern',Contract),witnesses),'/zk/thresholdtern');
+  const compiledContract=CompiledContract.withCompiledFileAssets(CompiledContract.withWitnesses(CompiledContract.make<Contract<State>,State>('thresholdtern',Contract),witnesses),'/zk/thresholdtern');
   const zkConfigProvider=new FetchZkConfigProvider<Circuit>(`${window.location.origin}/zk/thresholdtern`);
   const baseProof=httpClientProofProvider('http://127.0.0.1:6302',zkConfigProvider);
   const adapter:WalletProvider&MidnightProvider={
