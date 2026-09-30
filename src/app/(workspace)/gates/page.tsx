@@ -34,7 +34,7 @@ export default function Gates() {
     try {
       const { readGate, makeClient } = await import("@/lib/midnight/client");
       saveGate(await readGate(address.trim()));
-      if (localStorage.getItem("thresholdtern:pending-deploy")) {
+      if (localStorage.getItem("thresholdtern:pending-creator-state")) {
         if (!wallet) {
           setError(
             "The public gate is restored. Connect your original wallet to recover creator access.",

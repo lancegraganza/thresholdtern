@@ -1,143 +1,205 @@
 # ThresholdTern
 
-![CI: not published](public/ci-pending.svg)
+> Prove eligibility without revealing the underlying value.
 
-> Prove eligibility without revealing the evidence.
+[![CI](https://github.com/lancegraganza/thresholdtern/actions/workflows/ci.yml/badge.svg)](https://github.com/lancegraganza/thresholdtern/actions/workflows/ci.yml)
 
-## Live Demo
+**Midnight Level 1–3 submission · Age / Eligibility Gate · Preprod**
 
-Pending frontend deployment. Local application: `http://localhost:3000`.
+ThresholdTern lets an organizer publish an eligibility threshold and a participant prove that a private number meets it. Midnight verifies the proof and records the result without publishing the exact value. The current version demonstrates **self-asserted age and numeric thresholds**; trusted issuer credentials are the next step toward authenticated age assurance.
 
-## Contract Address
+## Submission links
 
-| Network | Address                                                       |
-| ------- | ------------------------------------------------------------- |
-| Preprod | **Pending wallet-authorized deployment — no address claimed** |
+| Resource | Link |
+| --- | --- |
+| Live website | [thresholdtern.vercel.app](https://thresholdtern.vercel.app/) |
+| Demo video | [Watch the demo](https://drive.google.com/file/d/1wIQzhaT02_1Jx08aVCcaBP4vzKJGpZWs/view?usp=sharing) |
+| Public repository | [lancegraganza/thresholdtern](https://github.com/lancegraganza/thresholdtern) |
+| Participant flow | [Open the submitted gate](https://thresholdtern.vercel.app/verify/5995335dd78d171d91a826f4cd0ba943be448869409764904b404f34f0203040) |
+| Contract source | [thresholdtern.compact](contracts/thresholdtern.compact) |
+| CI/CD | [Workflow](.github/workflows/ci.yml) · [Actions runs](https://github.com/lancegraganza/thresholdtern/actions/workflows/ci.yml) |
+| Commit history | [View development milestones](https://github.com/lancegraganza/thresholdtern/commits/main/) |
 
-Each published gate has its own contract address and share URL. Run `npm run deploy:preprod` with the local app running, then publish through the gate wizard in the browser with Lace. Paste the confirmed address back into the chat to bind this README to real deployment evidence.
+## Deployed contract
 
-Verify the confirmed address with `npm run verify:preprod -- <address>`. This checks live public state and the deployed circuit verifier keys against the actual generated keys and writes a public evidence receipt.
+**Network:** Midnight Preprod  
+**Submitted contract address:**
 
-## What This Does
+```text
+5995335dd78d171d91a826f4cd0ba943be448869409764904b404f34f0203040
+```
 
-ThresholdTern lets a creator publish a public eligibility requirement and a participant prove a private number meets it. The focused demo is **Create 18+ Gate → Publish → Share → Connect Wallet → Prove Privately → Midnight Confirms → Eligibility Result**. Gate details, activity and wallet settings keep creator and participant workflows separate.
+Each published gate has its own contract address and participant URL. See the [deployment screenshot](public/deployedcontract.png) for the submitted deployment evidence.
 
-The current product proves **self-asserted** age or custom numeric thresholds. It uses genuine Compact circuits and locally generated zero-knowledge proofs. Certifying real age, membership or residency requires trusted issuer credentials; those claims are not made by this implementation.
+To check public state and compare the deployed circuit verifier keys with the generated contract artifacts:
 
-## Privacy Model
+```sh
+npm run verify:preprod -- 5995335dd78d171d91a826f4cd0ba943be448869409764904b404f34f0203040
+```
 
-- **PUBLIC:** immutable gate name, threshold, requirement kind, expiry, active status, administration-secret hash, submission counts, random receipt IDs, eligibility booleans and blockchain transaction metadata.
-- **PRIVATE:** numeric witness and creator administration secret. A value is held only in client memory; creator secrets and maintenance keys are encrypted in browser-local storage.
-- **PROVED without revealing:** a private number satisfies or fails the public threshold. The circuit deliberately discloses the boolean, never the number.
+The command writes `docs/evidence/preprod.json` on success. It requires the compiled artifacts and an available Preprod indexer.
 
-## Privacy Claim
+## Quick review guide
 
-An observer sees the policy and result, not the exact witness. The result necessarily reveals a bound; a threshold at a domain boundary can reveal more by inference. This is not a guarantee of anonymous identity or unique participation. A random receipt prevents replay of that receipt, but a person can submit additional receipts. Counts are submissions.
+1. Watch the [demo video](https://drive.google.com/file/d/1wIQzhaT02_1Jx08aVCcaBP4vzKJGpZWs/view?usp=sharing).
+2. Review the compile, deployment and test screenshots below.
+3. Read the privacy model and inspect the `verify` and `close` circuits.
+4. Check the test sources, workflow runs and commit history.
+5. To reproduce a transaction, start a local proof server, connect Lace on Preprod and open the submitted gate.
 
-The local proof server receives proof preimages containing private witnesses. It must run on the participant's machine at `http://127.0.0.1:6302`. The app does not use a remote prover, API routes, Server Actions, logging or telemetry for evidence. Proofs are generated locally by a proof server, **not wholly in the browser**. No claim is made that a self-entered age is authenticated by an issuer. The result screen is not a server-side protected-content authorization system.
+## Level 1–3 evidence
 
-## Tech Stack
+| Level | Requirement | Evidence |
+| --- | --- | --- |
+| 1 | Compact toolchain and successful compilation | [Compile screenshot](public/compactcompile.png): Compact 0.31.1, two circuits, proving and verification keys. |
+| 1 | Generated `managed/` directory | `npm run compact:compile` produces `managed/thresholdtern/{contract,compiler,keys,zkir}`. |
+| 1 | Deployed Preview/Preprod contract | Address above and [Preprod deployment screenshot](public/deployedcontract.png). |
+| 1 | Passing tests and initial product idea | [31 passing tests](public/passtests.png) and product proposal below. |
+| 2 | Frontend and Lace connect/disconnect | [Live website](https://thresholdtern.vercel.app/), [wallet adapter](src/lib/midnight/wallet.ts) and [wallet UI](src/components/wallet-provider.tsx). |
+| 2 | Circuit integration and privacy behavior | [SDK integration](src/lib/midnight/client.ts), [contract tests](tests/contract.test.ts), [local proof evidence](docs/evidence/local-proofs.json) and submitted demo. |
+| 3 | Application tests: minimum 3 | Supplied screenshot shows **31 passing tests across 4 files**. |
+| 3 | CI/CD workflow | [Compile, test, typecheck, build and proof workflow](.github/workflows/ci.yml); current status is linked in the badge. |
+| 3 | Selected idea and product proposal | **Age / Eligibility Gate**; proposal and privacy model below. |
+| 1–3 | Minimum 5 / 8 / 10 meaningful commits | Reviewed local history contains **15 commits**, including contract, wallet, frontend, test and CI milestones. [History](https://github.com/lancegraganza/thresholdtern/commits/main/). |
+| 2–3 | Repository, live demo and video | Direct submission links above. |
 
-Next.js 16 App Router, React 19, TypeScript, Tailwind 4, Compact compiler 0.31.1 (language 0.23), compact-runtime 0.16.0, Midnight.js 4.1.1, ledger-v8 8.1.0, DApp Connector 4.0.1 and a local proof server 8.1.0. Versions are matched to the ledger-v8 SDK and generated artifacts.
+**Evidence status:** The website returned HTTP 200 and the repository is public. The supplied screenshots document compilation, deployment and local tests. The [latest inspected CI run](https://github.com/lancegraganza/thresholdtern/actions/runs/36730956206) failed at `npm test`; a passing remote run remains outstanding. Independent contract-state verification was unavailable because the Preprod indexer returned HTTP 503. Local proofs establish proof generation, not on-chain settlement. The video is supplied for judge review; organizer proposal approval is not recorded here.
 
-The interface uses the supplied tern logo, locally hosted Manrope and Space Grotesk fonts, and scoped GSAP motion with reduced-motion support. See the [redesign direction](docs/REDESIGN.md) and [browser review](docs/evidence/REDESIGN-REVIEW.md).
+## How it works
 
-## Prerequisites
+**Create gate → Publish → Share → Connect Lace → Prove privately → Midnight confirms → Eligibility receipt.**
 
-- Node.js 22 and npm 10.
-- Docker Desktop running with Compose.
-- Compact devtools and compiler 0.31.1; on Windows, install the compiler in WSL.
-- Lace with DApp Connector API 4.x, connected to Preprod, funded with spendable tNIGHT and DUST.
+- **Create:** Choose 18+, 21+, or a custom numeric threshold, give the gate a public name and optionally set an expiry.
+- **Publish:** Connect Lace on Preprod, unlock encrypted local storage when requested and authorize deployment.
+- **Share:** Copy the participant link from the gate details.
+- **Prove:** Enter a concealed private value. The local prover generates a proof and the wallet authorizes submission.
+- **Confirm:** Read the eligibility result and receipt after Midnight confirmation.
+- **Manage:** Review public submission counts or permanently close the gate using the creator's private administration secret.
 
-The organizer's historical npm compiler install is replaced with the actual [official Compact installer](https://github.com/LFDT-Minokawa/compact#installation) and pinned toolchain. See the [official SDK example version guidance](https://github.com/midnightntwrk/example-zkloan#installation--setup).
+See [docs/USAGE.md](docs/USAGE.md) for detailed steps and transaction recovery guidance.
 
-## Setup & Run Locally
+## Privacy model
 
-1. Clone your public repository (once published) and open its root directory.
-2. Install the Compact CLI in Linux/macOS or WSL:
+| Data | Visibility | Purpose |
+| --- | --- | --- |
+| Gate name, threshold, requirement kind and expiry | Public ledger | Defines the eligibility policy. |
+| Active flag, attempt count and success count | Public ledger | Shows gate status and aggregate submissions. |
+| Random receipt ID and eligibility boolean | Public ledger | Records the result and prevents reuse of that receipt ID. |
+| Administration-secret hash | Public ledger | Commits to the creator's authority. |
+| Participant's exact numeric value | Private witness; client memory and local prover | Used for comparison without publishing the number. |
+| Creator administration secret | Private witness; encrypted browser-local storage and local prover | Authorizes closure without publishing the secret. |
+| Transaction metadata | Observable on-chain | Supports confirmation and public receipts. |
 
-   ```sh
-   curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.2/compact-installer.sh | sh
-   source ~/.local/bin/env
-   compact update 0.31.1
-   compact compile +0.31.1 --version
-   ```
+### What the circuits prove
 
-3. Install dependencies and compile the real contract:
+`verify` checks that the gate is active, unexpired and has not seen the receipt ID before. It compares the private value with the public minimum and deliberately reveals only the boolean through `disclose(value >= minimum)`. Age values are constrained to at most 130; custom values use `Uint<16>`.
 
-   ```sh
-   npm ci
-   npm run compact:compile
-   ```
+`close` checks the private administration secret against the public hash and permanently deactivates the gate.
 
-   On Windows the compile script resolves the WSL compiler and translates paths automatically. Generated `managed/thresholdtern/` contains the JavaScript contract, circuits and keys. The build copies proving assets into `public/zk/thresholdtern/`.
+### What an observer learns
 
-4. Start your local prover:
+An observer sees the policy, eligibility result, receipts, counts and transaction metadata. The exact witness and administration secret are not disclosed on-chain. The result reveals a bound on the value; thresholds at domain boundaries may reveal more by inference.
 
-   ```sh
-   npm run proof:up
-   npm run proof:check
-   ```
+Proof generation uses a **local proof server at `http://127.0.0.1:6302`**. That service receives private proof preimages and must run on the participant's own machine. Proofs are not generated wholly in the browser. The participant value stays in client memory and is not sent to the website server, persisted in browser storage or included in application telemetry. Creator secrets and maintenance keys use encrypted browser-local storage.
 
-5. Start the application:
+The current proof checks a self-entered number; it does not authenticate real age, identity or unique participation. Fresh receipt IDs allow additional submissions, so counts represent submissions. A separate service must authenticate and bind a receipt to its visitor before enforcing protected access.
 
-   ```sh
-   npm run dev
-   ```
+## Product proposal
 
-6. Open `http://localhost:3000` in the browser with Lace installed. Your wallet explicitly connects to Preprod without a local password. Operations using encrypted local keys request a separate storage unlock; use your existing encryption password for creator recovery. The app checks the actual connection status before a transaction.
-7. Publish your first gate:
+**Selected organizer idea: Age / Eligibility Gate.**
 
-   ```sh
-   npm run deploy:preprod
-   ```
+### Initial idea and users
 
-   This command prints the browser deployment URL and instructions. Deployment occurs when you publish in the wizard and authorize your wallet; the command alone does not submit a transaction.
+ThresholdTern gives event organizers and community operators a way to check eligibility without collecting unnecessary personal values. A public gate defines a threshold, and a participant proves a private value meets it on Midnight. The first version demonstrates private comparisons; issuer-authenticated credentials are the next step toward real age assurance.
 
-For a production preview: `npm run build`, then `npm start`. Stop the development server before building so both processes do not share `.next` output.
+### Why Midnight
 
-## Run Tests
+Midnight's Compact circuits combine private witnesses with publicly verifiable results. ThresholdTern uses this selective disclosure to answer the organizer's eligibility question while withholding the participant's underlying number.
+
+### Mainnet feasibility
+
+The current scope is a Preprod demonstration. A Mainnet age-assurance product would require trusted issuer credentials, receipt binding to the requesting service, a secure participant proving setup and a reviewed operational design. Mainnet readiness and organizer approval are not claimed.
+
+## Run locally
+
+### Prerequisites
+
+- Node.js **22** and npm **10**.
+- Docker with Compose.
+- Compact devtools **0.5.2** and compiler **0.31.1**; use WSL for the compiler on Windows.
+- Lace with DApp Connector API **4.x**, connected to **Preprod**, with spendable tNIGHT and DUST for transactions.
+
+### Install and compile
+
+```sh
+git clone https://github.com/lancegraganza/thresholdtern.git
+cd thresholdtern
+```
+
+Install the pinned Compact toolchain in Linux, macOS or WSL:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.2/compact-installer.sh | sh
+source ~/.local/bin/env
+compact update 0.31.1
+compact compile +0.31.1 --version
+```
+
+From the repository root:
+
+```sh
+npm ci
+npm run compact:compile
+npm run proof:up
+npm run proof:check
+npm run dev
+```
+
+Open `http://localhost:3000`. The Windows compile script resolves the WSL compiler and translates paths automatically. Compilation generates `managed/thresholdtern/` and copies proving assets into `public/zk/thresholdtern/`.
+
+`npm ci` applies the version-checked [password validator patch](scripts/password-policy.mjs): an 8-character minimum with the other strength rules retained. Wallet connection and encrypted storage unlock are separate actions. Use the original encryption password to recover existing creator state.
+
+Publish a gate through **Create gate → Publish gate** with Lace on Preprod. `npm run deploy:preprod` prints the browser deployment URL and instructions; the browser and wallet submit the transaction.
+
+## Tests and CI/CD
 
 ```sh
 npm test
 npm run typecheck
-npm run proof:check
 npm run build
+npm run proof:check
 ```
 
-The generated Compact contract is executed directly in tests: 18+/21+ boundaries, invalid domains, custom maximum, counters, receipt replay, creator authorization, expiry and equal public transcripts for different private inputs. The proof check produces actual eligible, ineligible and close proofs through the local prover. This verifies proving, not Preprod settlement. See [local proof evidence](docs/evidence/local-proofs.json).
+| Suite | Passing tests in supplied screenshot | Coverage |
+| --- | --- | --- |
+| [Contract](tests/contract.test.ts) | 14 | Threshold boundaries, invalid domains, counters, replay, expiry, creator authorization and equal public transcripts for distinct private values. |
+| [Application logic](tests/logic.test.ts) | 11 | Gate and input validation. |
+| [Wallet](tests/wallet.test.ts) | 4 | Wallet adapter behavior. |
+| [Encrypted storage](tests/storage.test.ts) | 2 | SDK storage unlock and creator-state recovery. |
+| **Total** | **31** | **4 test files** |
 
-## CI/CD
+[Local proof evidence](docs/evidence/local-proofs.json) records actual eligible, ineligible and close proofs through the local prover. [Validation output](docs/evidence/redesign-validation.txt) records local tests, typecheck and production build results.
 
-[CI workflow](.github/workflows/ci.yml) runs on main pushes and pull requests: Node 22 → locked dependency installation → pinned Compact compile → tests → typecheck → production build → local proof smoke check → evidence artifact. Frontend hosting is configured in `vercel.json`:
+[GitHub CI](.github/workflows/ci.yml) runs on `main` pushes, pull requests and manual dispatch: Node 22 → locked dependencies → Compact compilation → tests → typecheck → production build → local proof smoke check → evidence artifact. [Vercel configuration](vercel.json) accompanies the live frontend deployment.
 
-```sh
-npx vercel
-npx vercel --prod
-```
+For a local production preview, stop the development server, run `npm run build`, then `npm start`.
 
-There is no Git remote in this checkout yet, so a remote CI run, public repository, active status badge and live URL remain pending. Replace the clearly marked pending badge with the repository's real Actions badge after publishing. Remote green CI is not claimed.
+## Submission screenshots
 
-## Product Proposal
+### Level 1 — successful compilation
 
-Selected organizer idea: **Age / Eligibility Gate**. [PROPOSAL.md](PROPOSAL.md) retains the organizer's owner-authored placeholders. Fill it in and submit for approval before starting Level 4.
+![Compact 0.31.1 successfully compiled verify and close and generated proving and verification keys](public/compactcompile.png)
 
-## Initial Idea
+### Level 1 — Preprod deployment
 
-ThresholdTern gives event organizers and communities a way to ask for eligibility without collecting unnecessary evidence. A public gate defines a threshold, and a participant proves a private value meets it on Midnight. The first version demonstrates private comparisons; issuer-authenticated credentials are the next step toward real age assurance.
+![Supplied Preprod explorer screenshot showing a deployed contract and deployment transaction](public/deployedcontract.png)
 
-## Usage Guide
+### Level 3 — passing local tests
 
-See [docs/USAGE.md](docs/USAGE.md), [architecture](docs/ARCHITECTURE.md) and the [Level 1–3 verification matrix](docs/REQUIREMENTS.md).
+![Vitest output showing 31 passing tests across four files](public/passtests.png)
 
-## Screenshots
+## Technical reference
 
-Validation logs and proof receipts are recorded under `docs/evidence/`. Desktop and mobile screens were reviewed in the actual browser; submission screenshots still need to be captured, including the address after real deployment. Local test/proof receipts must not be presented as on-chain receipts.
+Next.js **16.3.6**, React **19.3**, TypeScript **6**, Tailwind **4**, Compact compiler **0.31.1** (language **0.23**), compact-runtime **0.16.0**, Midnight.js **4.1.1**, ledger-v8 **8.1.0**, DApp Connector **4.0.1** and proof server **8.1.0**.
 
-## Demo Video
-
-Pending recording. See [docs/DEMO.md](docs/DEMO.md) for the one-minute checklist.
-
-## Product X Profile
-
-[PLACEHOLDER — add after creating the account at the appropriate milestone]
+[Architecture](docs/ARCHITECTURE.md) · [Usage guide](docs/USAGE.md) · [Contract](contracts/thresholdtern.compact) · [SDK integration](src/lib/midnight/client.ts) · [Verification script](scripts/verify-preprod.mjs)

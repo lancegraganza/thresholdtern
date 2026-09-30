@@ -6,6 +6,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
+    "postinstall": "node scripts/password-policy.mjs",
     "dev": "next dev --webpack",
     "build": "node scripts/copy-artifacts.mjs && next build --webpack",
     "start": "next start",

@@ -244,12 +244,17 @@ export function Modal({
         event.preventDefault();
         onClose();
       }}
-      onClose={onClose}
+      onClose={() => {
+        // A controlled/animated close already updated its parent. A late close
+        // event must not cancel a newly opened wallet or storage request.
+        if (open && !ref.current?.open) onClose();
+      }}
       aria-labelledby={titleId}
     >
       <div className="dialog-head">
         <h3 id={titleId}>{title}</h3>
         <button
+          type="button"
           className="icon-button"
           onClick={onClose}
           aria-label="Close dialog"

@@ -7,7 +7,7 @@ import { useStore } from "./provider";
 import { Motion } from "./motion";
 import { Progress } from "./progress";
 import { gateStatus, isAddress, policy, validateValue } from "@/lib/gates";
-import { failure, UserError } from "@/lib/midnight/wallet";
+import { canRetryTransaction, failure, UserError } from "@/lib/midnight/wallet";
 import type { Gate, Receipt, Stage } from "@/types/gate";
 type Pending = { id: string; txId?: string };
 export function Verification({
@@ -63,7 +63,7 @@ export function Verification({
             );
         }
       } catch (e) {
-        if (mounted) setError(failure(e));
+        if (mounted) setError(failure(e, "read"));
       } finally {
         if (mounted) setLoading(false);
       }
@@ -93,7 +93,7 @@ export function Verification({
       sessionStorage.removeItem(pendingKey);
       setPending(null);
     } catch (e) {
-      setError(failure(e));
+      setError(failure(e, "read"));
     } finally {
       setLoading(false);
     }
@@ -150,7 +150,8 @@ export function Verification({
       setGate(next);
       saveGate(next);
     } catch (e) {
-      setError(failure(e));
+      if (canRetryTransaction(e)) submitted = false;
+      setError(failure(e, submitted ? "transaction" : "operation"));
       if (!submitted) {
         setPending(null);
         sessionStorage.removeItem(pendingKey);

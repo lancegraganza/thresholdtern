@@ -35,6 +35,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [secret, setSecret] = useState(""),
     [storageError, setStorageError] = useState("");
   const password = useRef("");
+  const connecting = useRef(false);
+  const discovery = useRef(0);
   const request = useRef<{
     promise: Promise<string>;
     resolve: (value: string) => void;
@@ -59,11 +61,20 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [],
   );
   async function open() {
+    if (connecting.current) return;
+    const sequence = ++discovery.current;
     setError("");
     setOpened(true);
-    setOptions(await detectWallets());
+    try {
+      const detected = await detectWallets();
+      if (sequence === discovery.current) setOptions(detected);
+    } catch (e) {
+      if (sequence === discovery.current) setError(failure(e, "wallet"));
+    }
   }
   async function connect(option: WalletOption) {
+    if (connecting.current) return;
+    connecting.current = true;
     setError("");
     setBusy(option.id);
     try {
@@ -75,8 +86,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setWallet(next);
       setOpened(false);
     } catch (e) {
-      setError(failure(e));
+      setError(failure(e, "wallet"));
     } finally {
+      connecting.current = false;
       setBusy("");
     }
   }
@@ -111,7 +123,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       validatePassword(secret);
     } catch {
       setStorageError(
-        "Use 16+ characters with uppercase, lowercase and numbers, without simple repeated patterns.",
+        "Use 8+ characters with uppercase, lowercase and numbers, without simple repeated patterns.",
       );
       return;
     }
@@ -216,11 +228,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           <Field
             id="storage-password"
             label="Local encryption password"
-            hint="16+ characters, uppercase, lowercase and numbers. Kept in this session only."
+            hint="8+ characters, uppercase, lowercase and numbers. Kept in this session only."
           >
             <input
               id="storage-password"
               type="password"
+              minLength={8}
               autoComplete="current-password"
               value={secret}
               onChange={(event) => setSecret(event.target.value)}

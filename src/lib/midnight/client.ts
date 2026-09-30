@@ -1,6 +1,7 @@
 "use client";
 import {
-  deployContract,
+  createUnprovenDeployTx,
+  submitTxAsync,
   findDeployedContract,
   verifyContractState,
 } from "@midnight-ntwrk/midnight-js-contracts";
@@ -11,6 +12,7 @@ import { levelPrivateStateProvider } from "@midnight-ntwrk/midnight-js-level-pri
 import { setNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
 import { CompiledContract } from "@midnight-ntwrk/midnight-js-protocol/compact-js";
 import { Transaction } from "@midnight-ntwrk/midnight-js-protocol/ledger";
+import { sampleSigningKey } from "@midnight-ntwrk/midnight-js-protocol/compact-runtime";
 import type {
   MidnightProviders,
   WalletProvider,
@@ -28,14 +30,32 @@ import {
 } from "../../../managed/thresholdtern/contract/index.js";
 import { isAddress, validateDraft } from "@/lib/gates";
 import type { Draft, Gate, Receipt, Stage } from "@/types/gate";
-import { UserError, type Wallet } from "./wallet";
+import {
+  failure,
+  requireWalletReady,
+  submissionRejected,
+  TransactionFailedError,
+  UserError,
+  type Wallet,
+} from "./wallet";
+import {
+  clearPendingDeployment,
+  deploymentStatus,
+  isTransactionId,
+  pendingDeployment,
+  type DeploymentMetadata,
+} from "./deployment";
 
 const HTTP = "https://indexer.preprod.midnight.network/api/v4/graphql";
 const WS = "wss://indexer.preprod.midnight.network/api/v4/graphql/ws";
 type State = { admin: Uint8Array };
 type Circuit = "verify" | "close";
 const PENDING_SCOPE = "0".repeat(64);
-export type Progress = (stage: Stage, txId?: string) => void;
+export type Progress = (
+  stage: Stage,
+  txId?: string,
+  metadata?: DeploymentMetadata,
+) => void;
 function dataProvider() {
   setNetworkId("preprod");
   return indexerPublicDataProvider(HTTP, WS);
@@ -131,11 +151,12 @@ export async function makeClient(
     }
     return secret;
   };
-  const status = await wallet.api.getConnectionStatus();
-  if (status.status !== "connected" || status.networkId !== "preprod")
-    throw new UserError(
-      "Your wallet is no longer connected to Preprod. Reconnect before continuing.",
-    );
+  await requireWalletReady(wallet.api);
+  if (typeof wallet.api.hintUsage === "function")
+    await wallet.api.hintUsage([
+      "balanceUnsealedTransaction",
+      "submitTransaction",
+    ]);
   setNetworkId("preprod");
   const privateStateProvider = levelPrivateStateProvider<string, State>({
     accountId: wallet.address,
@@ -173,6 +194,7 @@ export async function makeClient(
     "http://127.0.0.1:6302",
     zkConfigProvider,
   );
+  let deploymentAddress: string | undefined;
   const adapter: WalletProvider & MidnightProvider = {
     getCoinPublicKey: () => wallet.coin,
     getEncryptionPublicKey: () => wallet.encryption,
@@ -190,13 +212,28 @@ export async function makeClient(
     },
     async submitTx(tx) {
       const id = tx.identifiers()[0];
-      if (!id)
+      if (!id || !isTransactionId(id))
         throw new UserError(
-          "The transaction has no identifier and was not submitted.",
+          "The transaction has no valid identifier and was not submitted.",
         );
-      onProgress("submitting", id);
-      await wallet.api.submitTransaction(toHex(tx.serialize()));
-      onProgress("finalizing", id);
+      const expiries = [...(tx.intents?.values() || [])].map((intent) =>
+        intent.ttl.getTime(),
+      );
+      const metadata = {
+        address: deploymentAddress,
+        txHash: tx.transactionHash(),
+        expiresAt: expiries.length ? Math.min(...expiries) : undefined,
+      };
+      // Keep an attempt durable before sending, without claiming acceptance.
+      onProgress("submitting", id, metadata);
+      try {
+        await wallet.api.submitTransaction(toHex(tx.serialize()));
+      } catch (error) {
+        if (submissionRejected(error))
+          throw new TransactionFailedError(failure(error, "wallet"));
+        throw error;
+      }
+      onProgress("finalizing", id, metadata);
       return id;
     },
   };
@@ -229,9 +266,9 @@ export async function makeClient(
         "thresholdtern:pending-creator-state",
         privateStateId,
       );
-      const deployed = await deployContract(providers, {
+      const prepared = await createUnprovenDeployTx(providers, {
         compiledContract,
-        privateStateId,
+        signingKey: sampleSigningKey(),
         initialPrivateState: { admin },
         args: [
           BigInt(draft.minimum),
@@ -242,17 +279,45 @@ export async function makeClient(
             : 0n,
         ],
       });
-      const pub = deployed.deployTxData.public;
+      deploymentAddress = prepared.public.contractAddress;
+      // Save both creator state and maintenance keys before a transaction can
+      // leave the browser. Timeout/refresh recovery must not lose either key.
+      privateStateProvider.setContractAddress(deploymentAddress);
+      await privateStateProvider.set(
+        privateStateId,
+        prepared.private.initialPrivateState,
+      );
+      await privateStateProvider.setSigningKey(
+        deploymentAddress,
+        prepared.private.signingKey,
+      );
       localStorage.setItem(
-        `thresholdtern:creator:${pub.contractAddress}`,
+        `thresholdtern:creator:${deploymentAddress}`,
         privateStateId,
       );
-      localStorage.removeItem("thresholdtern:pending-creator-state");
-      return {
-        gate: await readGate(pub.contractAddress),
-        txId: pub.txId,
-        blockHeight: pub.blockHeight,
-      };
+      const id = await submitTxAsync(providers, {
+        unprovenTx: prepared.private.unprovenTx,
+      });
+      const deadline = Date.now() + 60_000;
+      while (Date.now() < deadline) {
+        const result = await deploymentStatus({
+          ...(pendingDeployment() || {}),
+          id,
+          address: deploymentAddress,
+          phase: "accepted",
+        });
+        if (result.status === "confirmed") {
+          const gate = await readGate(result.address);
+          localStorage.removeItem("thresholdtern:pending-creator-state");
+          return { gate, txId: id, blockHeight: result.blockHeight };
+        }
+        if (result.status === "failed")
+          throw new TransactionFailedError(result.message);
+        await new Promise((resolve) => setTimeout(resolve, 2_000));
+      }
+      throw new UserError(
+        "Your wallet accepted submission, but confirmation is not available yet. Use Check deployment status; your creator keys are saved.",
+      );
     },
     async verify(gate: Gate, id: string): Promise<Receipt> {
       try {
@@ -299,9 +364,12 @@ export async function makeClient(
       return { gate: await readGate(address), txId: result.public.txId };
     },
     async recoverCreator(address: string) {
-      const privateStateId = localStorage.getItem(
+      const pendingStateId = localStorage.getItem(
         "thresholdtern:pending-creator-state",
       );
+      const privateStateId =
+        localStorage.getItem(`thresholdtern:creator:${address}`) ||
+        pendingStateId;
       if (!privateStateId) return false;
       privateStateProvider.setContractAddress(address);
       let state = await privateStateProvider.get(privateStateId);
@@ -326,8 +394,10 @@ export async function makeClient(
       privateStateProvider.setContractAddress(address);
       await privateStateProvider.set(privateStateId, state);
       localStorage.setItem(`thresholdtern:creator:${address}`, privateStateId);
-      localStorage.removeItem("thresholdtern:pending-creator-state");
-      localStorage.removeItem("thresholdtern:pending-deploy");
+      if (pendingStateId === privateStateId) {
+        localStorage.removeItem("thresholdtern:pending-creator-state");
+        clearPendingDeployment();
+      }
       return true;
     },
   };

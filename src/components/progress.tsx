@@ -29,7 +29,11 @@ export function Progress({ stage, txId }: { stage: Stage; txId?: string }) {
           <details>
             <summary>View technical details</summary>
             <p className="mono">Transaction: {txId}</p>
-            <p className="hint">Submitted. Waiting for chain confirmation.</p>
+            <p className="hint">
+              {stage === "submitting"
+                ? "Waiting for the wallet to accept submission."
+                : "Wallet accepted submission. Waiting for chain confirmation."}
+            </p>
           </details>
         )}
       </div>

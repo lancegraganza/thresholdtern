@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Button,
   Card,
   Field,
   Icon,
+  Modal,
   Notice,
   PageHead,
   Status,
@@ -15,7 +16,14 @@ import { Progress } from "@/components/progress";
 import { useWallet } from "@/components/wallet-provider";
 import { useStore } from "@/components/provider";
 import { draftKey, policy, readStored, validateDraft } from "@/lib/gates";
-import { failure } from "@/lib/midnight/wallet";
+import { canRetryTransaction, failure } from "@/lib/midnight/wallet";
+import {
+  clearPendingDeployment,
+  deploymentStatus,
+  pendingDeployment,
+  savePendingDeployment,
+  type DeploymentStatus,
+} from "@/lib/midnight/deployment";
 import {
   defaultDraft,
   type Draft,
@@ -38,7 +46,13 @@ export default function CreateGate() {
     [stage, setStage] = useState<Stage | null>(null),
     [txId, setTxId] = useState(""),
     [gate, setGate] = useState<Gate | null>(null),
-    [uncertain, setUncertain] = useState(false);
+    [uncertain, setUncertain] = useState(false),
+    [checking, setChecking] = useState(false),
+    [statusMessage, setStatusMessage] = useState(""),
+    [resetOpen, setResetOpen] = useState(false),
+    [resetError, setResetError] = useState(""),
+    [creatorRecovery, setCreatorRecovery] = useState(false);
+  const working = useRef(false);
   useEffect(() => {
     const saved = readStored<Draft>(draftKey, defaultDraft);
     if (
@@ -49,10 +63,16 @@ export default function CreateGate() {
       typeof saved.expiry === "string"
     )
       setDraft(saved);
-    const pending = localStorage.getItem("thresholdtern:pending-deploy");
+    const pending = pendingDeployment();
     if (pending) {
-      setTxId(pending);
+      setTxId(pending.id);
       setUncertain(true);
+      setStep(3);
+      setStatusMessage(
+        pending.phase === "accepted"
+          ? "Your wallet accepted a deployment. Check its status before publishing again."
+          : "A previous deployment attempt needs checking. A saved transaction reference does not mean your wallet accepted it.",
+      );
     }
     setLoaded(true);
   }, []);
@@ -78,35 +98,136 @@ export default function CreateGate() {
     setStep(step + 1);
   }
   async function publish() {
+    if (working.current || uncertain || pendingDeployment()) return;
     if (!wallet) {
       open();
       return;
     }
+    working.current = true;
     setError("");
+    setStatusMessage("");
+    setTxId("");
     setStage("preparing");
     let submitted = false;
     try {
       const { makeClient } = await import("@/lib/midnight/client");
-      const client = await makeClient(wallet, unlockStorage, (s, id) => {
-        setStage(s);
-        if (id) {
-          submitted = true;
-          setTxId(id);
-          localStorage.setItem("thresholdtern:pending-deploy", id);
-        }
-      });
+      const client = await makeClient(
+        wallet,
+        unlockStorage,
+        (s, id, metadata) => {
+          setStage(s);
+          if (id) {
+            savePendingDeployment(
+              id,
+              s === "finalizing" ? "accepted" : "attempting",
+              metadata,
+            );
+            submitted = true;
+            setTxId(id);
+          }
+        },
+      );
       const result = await client.deploy(draft);
       saveGate(result.gate);
       setGate(result.gate);
       setTxId(result.txId);
       localStorage.removeItem(draftKey);
-      localStorage.removeItem("thresholdtern:pending-deploy");
+      clearPendingDeployment();
       toast("Gate published on Midnight Preprod.");
     } catch (e) {
-      setError(failure(e));
-      if (submitted) setUncertain(true);
+      setError(failure(e, submitted ? "transaction" : "operation"));
+      if (!submitted || canRetryTransaction(e)) {
+        clearPendingDeployment();
+        setUncertain(false);
+        setTxId("");
+      } else {
+        setUncertain(true);
+        setStatusMessage(
+          "Confirmation is still uncertain. Check this attempt before publishing again; your draft and encrypted creator keys are kept.",
+        );
+      }
     } finally {
+      working.current = false;
       setStage(null);
+    }
+  }
+  function releaseAttempt(message: string) {
+    clearPendingDeployment();
+    setUncertain(false);
+    setTxId("");
+    setStatusMessage(message);
+    setError("");
+  }
+  async function restoreDeployment(
+    id: string,
+    result: Extract<DeploymentStatus, { status: "confirmed" }>,
+  ) {
+    const { readGate } = await import("@/lib/midnight/client");
+    const restored = await readGate(result.address);
+    const creatorId = localStorage.getItem(
+      `thresholdtern:creator:${result.address}`,
+    );
+    const pendingCreatorId = localStorage.getItem(
+      "thresholdtern:pending-creator-state",
+    );
+    if (creatorId && creatorId === pendingCreatorId)
+      localStorage.removeItem("thresholdtern:pending-creator-state");
+    setCreatorRecovery(!creatorId && !!pendingCreatorId);
+    saveGate(restored);
+    setGate(restored);
+    setTxId(id);
+    setUncertain(false);
+    clearPendingDeployment();
+    localStorage.removeItem(draftKey);
+    toast("Gate confirmed and restored from Midnight Preprod.");
+  }
+  async function checkDeployment(walletReportedFailure = false) {
+    if (working.current) return;
+    const saved = pendingDeployment();
+    const pending =
+      saved || (txId ? { id: txId, phase: "unknown" as const } : null);
+    if (!pending) {
+      // Missing browser storage is not evidence that a transaction never left
+      // the wallet. Do not erase an earlier error or claim deployment success.
+      setUncertain(false);
+      setStatusMessage(
+        "There is no saved transaction reference to check. Check your wallet history for the previous attempt. Your draft is kept.",
+      );
+      setResetOpen(false);
+      return;
+    }
+    working.current = true;
+    setChecking(true);
+    setError("");
+    setResetError("");
+    try {
+      if (!saved) savePendingDeployment(pending.id, pending.phase);
+      // Check authoritative state even when the user reports a wallet failure.
+      // This prevents clearing an attempt that actually deployed successfully.
+      const result = await deploymentStatus(pending, wallet);
+      if (result.status === "confirmed") {
+        await restoreDeployment(pending.id, result);
+        setResetOpen(false);
+      } else if (result.status === "failed") {
+        releaseAttempt(result.message);
+        setResetOpen(false);
+      } else if (walletReportedFailure && !result.retryBlocked) {
+        releaseAttempt(
+          "Attempt cleared based on your wallet's reported rejection or discard. Your draft is kept; you can publish again.",
+        );
+        setResetOpen(false);
+      } else {
+        setUncertain(true);
+        setStatusMessage(result.message);
+        if (walletReportedFailure) setResetError(result.message);
+      }
+    } catch (e) {
+      const message = failure(e, "read");
+      if (walletReportedFailure) setResetError(message);
+      else setError(message);
+    } finally {
+      working.current = false;
+      setChecking(false);
     }
   }
   return (
@@ -126,6 +247,13 @@ export default function CreateGate() {
             <p className="muted" style={{ marginTop: 16 }}>
               {gate.name} · {policy(gate)}
             </p>
+            {creatorRecovery && (
+              <Notice>
+                To recover creator access, restore this address in Gates using
+                your original wallet and local storage password.{" "}
+                <Link href="/gates">Open Gates →</Link>
+              </Notice>
+            )}
             <div className="actions">
               <Link href={`/gates/${gate.address}`} className="btn">
                 Get your share link
@@ -161,8 +289,9 @@ export default function CreateGate() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (stage || (uncertain && step === 3)) return;
+                if (working.current || stage || checking) return;
                 if (step < 3) next();
+                else if (uncertain) void checkDeployment();
                 else void publish();
               }}
             >
@@ -345,14 +474,13 @@ export default function CreateGate() {
                       <Progress stage={stage} txId={txId} />
                     ) : (
                       <Notice>
-                        {uncertain
-                          ? "A deployment was submitted. Check its transaction, then restore the resulting address in Gates before starting another deployment."
-                          : "Start the local proof server. Your wallet needs spendable Preprod funds and DUST."}
+                        {statusMessage ||
+                          "Start the local proof server. Your wallet needs spendable Preprod funds and DUST."}
                       </Notice>
                     )}
                     {uncertain && (
                       <details open>
-                        <summary>Submitted transaction</summary>
+                        <summary>Deployment attempt</summary>
                         <p className="mono">{txId}</p>
                         <a
                           href="https://preprod.midnightexplorer.com/"
@@ -362,6 +490,19 @@ export default function CreateGate() {
                           Open Preprod explorer ↗
                         </a>
                       </details>
+                    )}
+                    {uncertain && !stage && (
+                      <Button
+                        type="button"
+                        variant="text"
+                        disabled={checking}
+                        onClick={() => {
+                          setResetError("");
+                          setResetOpen(true);
+                        }}
+                      >
+                        Wallet rejected this attempt
+                      </Button>
                     )}
                   </>
                 )}
@@ -382,7 +523,7 @@ export default function CreateGate() {
                       setStep(step - 1);
                       setError("");
                     }}
-                    disabled={!!stage}
+                    disabled={!!stage || checking || uncertain}
                   >
                     ← Back
                   </Button>
@@ -397,12 +538,16 @@ export default function CreateGate() {
                     <Icon name="arrow" size={15} />
                   </Button>
                 ) : (
-                  <Button type="submit" disabled={!!stage || uncertain}>
+                  <Button type="submit" disabled={!!stage || checking}>
                     {stage
                       ? "Publishing gate…"
-                      : wallet
-                        ? "Publish gate"
-                        : "Connect wallet to publish"}
+                      : checking
+                        ? "Checking deployment…"
+                        : uncertain
+                          ? "Check deployment status"
+                          : wallet
+                            ? "Publish gate"
+                            : "Connect wallet to publish"}
                     {!stage && <Icon name="arrow" size={15} />}
                   </Button>
                 )}
@@ -435,6 +580,37 @@ export default function CreateGate() {
           </aside>
         </div>
       )}
+      <Modal
+        open={resetOpen}
+        onClose={() => {
+          if (!checking) setResetOpen(false);
+        }}
+        title="Clear a rejected attempt"
+      >
+        <p className="hint">
+          Use this only when your wallet explicitly shows this attempt as
+          rejected or discarded. If it is pending, keep checking its status.
+          Your draft and encrypted creator keys are kept.
+        </p>
+        {resetError && <Notice error>{resetError}</Notice>}
+        <div className="actions">
+          <Button
+            type="button"
+            disabled={checking}
+            onClick={() => void checkDeployment(true)}
+          >
+            {checking ? "Checking deployment…" : "My wallet reports failure"}
+          </Button>
+          <Button
+            type="button"
+            variant="text"
+            disabled={checking}
+            onClick={() => setResetOpen(false)}
+          >
+            Cancel
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

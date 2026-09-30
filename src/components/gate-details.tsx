@@ -6,7 +6,7 @@ import { useWallet } from "./wallet-provider";
 import { Button, Field, Icon, Modal, Notice, PageHead, Status } from "./ui";
 import { Progress } from "./progress";
 import { gateStatus, isAddress } from "@/lib/gates";
-import { failure, UserError } from "@/lib/midnight/wallet";
+import { canRetryTransaction, failure, UserError } from "@/lib/midnight/wallet";
 import type { Gate, Stage } from "@/types/gate";
 export function GateDetails({ address }: { address: string }) {
   const { saveGate, toast } = useStore(),
@@ -34,7 +34,7 @@ export function GateDetails({ address }: { address: string }) {
       saveGate(g);
       if (!g.active) setUncertain(false);
     } catch (e) {
-      setError(failure(e));
+      setError(failure(e, "read"));
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,8 @@ export function GateDetails({ address }: { address: string }) {
       saveGate(result.gate);
       toast("Gate closed on Midnight.");
     } catch (e) {
-      setError(failure(e));
+      if (canRetryTransaction(e)) submitted = false;
+      setError(failure(e, submitted ? "transaction" : "operation"));
       if (submitted) setUncertain(true);
     } finally {
       setStage(null);

@@ -6,7 +6,7 @@
 - Spendable Preprod funds and DUST. Complete wallet sync after using the faucet.
 - ThresholdTern running locally, or its eventual published demo URL.
 - The local proof server running on your own machine. Ask the person helping with setup to run `npm run proof:up`. Private evidence goes to this local service, so use your own machine.
-- Wallet connection does not require a local password. Operations that need Midnight's encrypted local keys ask for a separate storage unlock: 16+ characters, uppercase, lowercase and numbers. Use the original password for existing creator secrets.
+- Wallet connection does not require a local password. Operations that need Midnight's encrypted local keys ask for a separate storage unlock: 8+ characters, uppercase, lowercase and numbers. Use the original password for existing creator secrets.
 
 ## Step-by-Step Guide
 
@@ -40,18 +40,19 @@ Proof computation happens on your local proof server, not entirely inside the br
 
 ## Troubleshooting
 
-| What happened | What to do |
-| --- | --- |
-| No wallet detected | Install/enable Lace, unlock it, refresh the tab and select Check for wallets again. |
-| Wrong network | Switch Lace to Midnight Preprod, then reconnect. |
-| Wallet request declined | Approve the next request when ready. |
-| Funds or DUST unavailable | Fund the Preprod wallet, register NIGHT for DUST if needed, and let it sync. |
-| Proof server unreachable | Start Docker and run `npm run proof:up`; keep it running. |
-| Password cannot unlock storage | Use the original local privacy password. No password recovery service exists. |
-| Gate expired or closed | Request a new active gate from its creator. |
-| Submitted proof has no result yet | Use **Check result on Midnight**. Do not submit a second transaction while confirmation is uncertain. |
-| Submitted deployment is uncertain | Look up its transaction in the Preprod explorer. Restore its confirmed contract address in Gates. Do not deploy again while it is pending. |
-| Gates disappear after changing browsers | Use **Restore gate by address**. This restores public data; it does not recover creator secrets. |
-| Page refreshed | Reconnect the wallet and unlock local storage. Drafts and public gates remain; private evidence must be entered again. |
+| What happened                                                | What to do                                                                                                                                                                                                                               |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No wallet detected                                           | Install/enable Lace, unlock it, refresh the tab and select Check for wallets again.                                                                                                                                                      |
+| Wrong network                                                | Switch Lace to Midnight Preprod, then reconnect.                                                                                                                                                                                         |
+| Wallet request declined                                      | Approve the next request when ready.                                                                                                                                                                                                     |
+| Funds or DUST unavailable                                    | Fund the Preprod wallet, register NIGHT for DUST if needed, and let it sync.                                                                                                                                                             |
+| Proof server unreachable                                     | Start Docker and run `npm run proof:up`; keep it running.                                                                                                                                                                                |
+| Password cannot unlock storage                               | Use the original local privacy password. No password recovery service exists.                                                                                                                                                            |
+| Gate expired or closed                                       | Request a new active gate from its creator.                                                                                                                                                                                              |
+| Submitted proof has no result yet                            | Use **Check result on Midnight**. Do not submit a second transaction while confirmation is uncertain.                                                                                                                                    |
+| Deployment confirmation is uncertain                         | Use **Check deployment status** on Publish. Confirmed gates are restored automatically; confirmed failures and expired attempts release Publish for retry. Keep checking while it is pending.                                            |
+| Old deployment attempt blocks Publish after wallet rejection | Select **Wallet rejected this attempt** only if your wallet explicitly reports rejection or discard, then **My wallet reports failure**. The app checks chain state before clearing the attempt and keeps your draft and encrypted keys. |
+| Gates disappear after changing browsers                      | Use **Restore gate by address**. This restores public data; it does not recover creator secrets.                                                                                                                                         |
+| Page refreshed                                               | Reconnect the wallet and unlock local storage. Drafts and public gates remain; private evidence must be entered again.                                                                                                                   |
 
-If the explorer reports a definitive failed transaction, keep that receipt and ask the developer to reconcile it before starting a fresh attempt. Never infer confirmation from an animation or a local comparison.
+Wallet acceptance and Midnight confirmation are separate. A missing explorer record alone does not prove failure. Never infer confirmation from an animation or a local comparison.
