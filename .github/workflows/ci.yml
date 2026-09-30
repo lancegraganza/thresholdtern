@@ -17,6 +17,8 @@ jobs:
           node-version: 22
           cache: npm
       - uses: midnightntwrk/setup-compact-action@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           compact-version: "0.31.1"
       - run: npm ci
