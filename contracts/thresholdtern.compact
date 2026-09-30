@@ -1,0 +1,51 @@
+pragma language_version 0.23;
+import CompactStandardLibrary;
+
+// PUBLIC: immutable policy, gate name, expiry, administration hash, active flag,
+// submission counts and boolean receipts. PRIVATE: value and admin secret.
+// This proves a self-asserted number, not a credential from a trusted issuer.
+// The local proof server sees witnesses; never use a third-party prover.
+export ledger minimum: Uint<16>;
+export ledger kind: Uint<8>; // 0 age, 1 custom numeric threshold
+export ledger title: Bytes<64>;
+export ledger expiresAt: Uint<64>; // 0 = no expiry
+export ledger adminHash: Bytes<32>;
+export ledger active: Boolean;
+export ledger attempts: Counter;
+export ledger successes: Counter;
+export ledger receipts: Map<Bytes<32>, Boolean>;
+
+witness privateValue(): Uint<16>;
+witness administrationSecret(): Bytes<32>;
+
+constructor(boundary: Uint<16>, requirementKind: Uint<8>, name: Bytes<64>, expiry: Uint<64>) {
+  assert(boundary > 0, "minimum must be positive");
+  assert(requirementKind <= 1, "invalid requirement kind");
+  assert(requirementKind != 0 || boundary <= 130, "invalid age threshold");
+  minimum = disclose(boundary);
+  kind = disclose(requirementKind);
+  title = disclose(name);
+  expiresAt = disclose(expiry);
+  adminHash = disclose(persistentHash<Bytes<32>>(administrationSecret()));
+  active = true;
+}
+
+export circuit verify(receiptId: Bytes<32>): Boolean {
+  assert(active, "gate is closed");
+  assert(expiresAt == 0 || blockTimeLt(expiresAt), "gate has expired");
+  const id = disclose(receiptId);
+  assert(!receipts.member(id), "receipt already used");
+  const value = privateValue();
+  assert(kind != 0 || value <= 130, "invalid age");
+  const eligible = disclose(value >= minimum);
+  receipts.insert(id, eligible);
+  attempts.increment(1);
+  if (eligible) { successes.increment(1); }
+  return eligible;
+}
+
+export circuit close(): [] {
+  assert(active, "gate is already closed");
+  assert(persistentHash<Bytes<32>>(administrationSecret()) == adminHash, "creator authorization required");
+  active = false;
+}
