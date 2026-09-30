@@ -12,3 +12,7 @@ const args = ['compile', '+0.31.1', path('contracts/thresholdtern.compact'), pat
 const result = spawnSync(windows ? 'wsl.exe' : compact, windows ? [compact, ...args] : args, { stdio: 'inherit' });
 if (result.status !== 0) process.exit(result.status ?? 1);
 await import('./copy-artifacts.mjs');
+const {readFile}=await import('node:fs/promises');
+const info=JSON.parse(await readFile('managed/thresholdtern/compiler/contract-info.json','utf8'));
+console.log('Compact 0.31.1 compiled successfully. Generated verify and close circuits, prover and verifier keys.');
+console.log(`Contract metadata: ${Object.keys(info).join(', ')}`);

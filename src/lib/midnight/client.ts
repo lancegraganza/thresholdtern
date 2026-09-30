@@ -53,7 +53,7 @@ export async function makeClient(wallet:Wallet,password:string,onProgress:Progre
   const adapter:WalletProvider&MidnightProvider={
     getCoinPublicKey:()=>wallet.coin,getEncryptionPublicKey:()=>wallet.encryption,
     async balanceTx(tx){onProgress('balancing');const result=await wallet.api.balanceUnsealedTransaction(toHex(tx.serialize()));return Transaction.deserialize('signature','proof','binding',fromHex(result.tx));},
-    async submitTx(tx){onProgress('submitting');await wallet.api.submitTransaction(toHex(tx.serialize()));const id=tx.identifiers()[0];if(!id)throw new UserError('The wallet did not return a transaction identifier. Reconcile the chain state before retrying.');onProgress('finalizing',id);return id;}
+    async submitTx(tx){const id=tx.identifiers()[0];if(!id)throw new UserError('The transaction has no identifier and was not submitted.');onProgress('submitting',id);await wallet.api.submitTransaction(toHex(tx.serialize()));onProgress('finalizing',id);return id;}
   };
   const providers:MidnightProviders<Circuit,string,State>={privateStateProvider,publicDataProvider:dataProvider(),zkConfigProvider,walletProvider:adapter,midnightProvider:adapter,proofProvider:{proveTx(tx,config){onProgress('proving');return baseProof.proveTx(tx,config);}}};
   return {
