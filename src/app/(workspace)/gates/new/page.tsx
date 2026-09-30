@@ -185,7 +185,8 @@ export default function CreateGate() {
                       setDraft({ ...draft, name: e.target.value })
                     }
                     placeholder="Evening gathering"
-                    aria-describedby="gate-name-hint"
+                    aria-describedby={`gate-name-hint${error ? ' wizard-error' : ''}`}
+                    aria-invalid={!!error && step===1}
                     autoComplete="off"
                   />
                 </Field>
@@ -308,7 +309,7 @@ export default function CreateGate() {
             )}
             {error && (
               <div style={{ marginTop: 20 }}>
-                <Notice error>{error}</Notice>
+                <Notice id="wizard-error" error>{error}</Notice>
               </div>
             )}
             <div className="actions">

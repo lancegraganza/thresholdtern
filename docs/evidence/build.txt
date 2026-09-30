@@ -1,0 +1,35 @@
+
+> thresholdtern@0.1.0 build
+> node scripts/copy-artifacts.mjs && next build --webpack
+
+▲ Next.js 16.3.6 (webpack)
+✓ Running next.config.ts took 66ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 9.0s
+  Running TypeScript ...
+  Finished TypeScript in 4.3s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/8) ...
+  Generating static pages using 11 workers (2/8) 
+  Generating static pages using 11 workers (4/8) 
+  Generating static pages using 11 workers (6/8) 
+✓ Generating static pages using 11 workers (8/8) in 1734ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /activity
+├ ○ /dashboard
+├ ○ /gates
+├ ƒ /gates/[address]
+├ ○ /gates/new
+├ ○ /settings
+└ ƒ /verify/[address]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

@@ -130,7 +130,7 @@ See [docs/USAGE.md](docs/USAGE.md), [architecture](docs/ARCHITECTURE.md) and the
 
 ## Screenshots
 
-UI screenshots and validation logs are recorded under `docs/evidence/`. A deployed-address screenshot is pending actual deployment. Local test/proof receipts must not be presented as on-chain receipts.
+Validation logs and proof receipts are recorded under `docs/evidence/`. Desktop and mobile screens were reviewed in the actual browser; submission screenshots still need to be captured, including the address after real deployment. Local test/proof receipts must not be presented as on-chain receipts.
 
 ## Demo Video
 
