@@ -15,6 +15,7 @@
     "proof:up": "docker compose up -d",
     "proof:check": "node scripts/proof-check.mjs",
     "deploy:preprod": "node scripts/deploy.mjs",
+    "verify:preprod": "node scripts/verify-preprod.mjs",
     "verify": "npm run compact:compile && npm test && npm run typecheck && npm run build"
   },
   "dependencies": {

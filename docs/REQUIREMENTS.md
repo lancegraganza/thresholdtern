@@ -1,0 +1,46 @@
+# Level 1–3 requirement verification
+
+This matrix records observed evidence, not assumed completion. **The submission is not complete until the pending network and publication items below are verified.** Organizer Level 4–6 prompts are later milestones and have not been claimed.
+
+| Requirement | Status | Evidence / next action |
+| --- | --- | --- |
+| Node 22 and Compact toolchain available | ✓ Local | Node 22; Compact devtools 0.5.2, compiler 0.31.1 |
+| Docker and local proof server | ✓ Local | `thresholdtern-proof-server-1`, localhost:6302, successful actual proofs |
+| Compact contract compiles | ✓ Local | `npm run compact:compile`; generated verify and close circuits |
+| Public ledger, private witness, deliberate disclose | ✓ Implemented | `contracts/thresholdtern.compact`; exact value stays in the witness, only the result is disclosed |
+| Generated managed circuits and keys present | ✓ Local | `managed/thresholdtern/{contract,compiler,keys,zkir}` |
+| Passing suite, minimum 3 tests | ✓ Local | 25 tests; generated contract execution and frontend validation, `evidence/validation.txt` |
+| Real proof generation | ✓ Local | Eligible/ineligible proofs: 2940 bytes each; close proof: 4508 bytes, `evidence/local-proofs.json` |
+| Genuine on-chain verification | ✗ Pending | Connect a funded Preprod wallet, publish a gate, then confirm a participant call |
+| Deployed Preprod address | ✗ Pending | User-authorized wallet deployment; then `npm run verify:preprod -- <address>` |
+| Verified address in README | ✗ Pending | Address section exists with an explicit pending status; replace only after confirmation |
+| README product idea, privacy model and setup | ✓ Implemented | Root README and `docs/ARCHITECTURE.md` |
+| Lace connect/disconnect | ✓ Implemented; ✗ live approval pending | API 4.x discovery, explicit Preprod authorization, status and key validation; disconnect clears session |
+| Frontend successfully calls deployed circuit | ✗ Pending | SDK deploy/find/call integration exists; no successful live call claimed |
+| Observable privacy behavior | ✓ Circuit/prover; ✗ network demo pending | Distinct eligible private inputs have identical public transcripts; needs live demonstration |
+| Landing and separate creator/participant flows | ✓ Local UI review | Landing, dashboard, gates, four-step wizard, participant, activity and settings |
+| State and error handling | ✓ Implemented | Missing/rejected/wrong-network wallets, invalid gate/input, expiry, closed gate, proof failure, pending receipt recovery |
+| Refresh and public persistence | ✓ Implemented | Draft/public gate recovery, encrypted creator secret, pending transaction IDs; exact values never persisted |
+| Responsive navigation and native focus-managed dialogs | ✓ Implemented / reviewed | Sidebar on desktop, bottom navigation on mobile; dialog focus and reduced-motion rules |
+| Production build with zero errors | ✓ Local | `npm run build` completed successfully |
+| 5 / 8 / 10 meaningful commits | ✓ Local history | More than 10 milestone commits; `git log --oneline` |
+| Correct project structure | ✓ Implemented | Next.js App Router replaces organizer's Vite App.tsx/main.tsx; contracts, managed, src, tests, docs and workflows present |
+| CI workflow compile + test on push | ✓ File; ✗ remote run pending | `.github/workflows/ci.yml`; no Git remote supplied |
+| Green CI badge | ✗ Pending | README badge explicitly says not published; bind the real Actions badge after publication |
+| Public GitHub repo / live frontend URL | ✗ Pending | No remote or hosting destination supplied; Vercel configuration and commands documented |
+| Compile, test and deployed-address screenshots | ✗ Submission captures pending | Actual logs provided; capture these plus the confirmed address for submission |
+| One-minute demo video | ✗ Pending | `docs/DEMO.md` checklist |
+| Selected idea and owner-authored proposal | ✓ Idea selected; ✗ proposal approval pending | Age / Eligibility Gate; fill organizer placeholders in PROPOSAL.md and submit for approval |
+| User guide | ✓ Implemented | `docs/USAGE.md` |
+
+## Privacy and product limits
+
+This is an actual ZK proof of a self-asserted numeric threshold, not authenticated evidence of someone's age. Membership/residency and issuer credentials require additional work before reliable assurance. Receipt IDs prevent replay, not multiple submissions by one person. A proof server on the participant's own machine processes witnesses; claiming that proofs are generated entirely in browser would be inaccurate. Eligibility results do not by themselves enforce server-side access control.
+
+## Finish the real demo
+
+1. Start the local app and proof server. Run `npm run deploy:preprod`, open the printed URL in the Lace browser, then publish a gate with your funded Preprod wallet.
+2. Copy the confirmed gate address. Run `npm run verify:preprod -- <address>` and provide the address so README can be updated.
+3. Open the share link in a participant wallet, prove eligible and ineligible fixture values, and capture confirmed transaction IDs. Do not record real personal evidence.
+4. Publish the repository, verify the first remote CI run, deploy the frontend and supply the real URLs.
+5. Fill PROPOSAL.md, take required screenshots, record the one-minute demo, and submit Level 1–3 evidence for organizer approval.

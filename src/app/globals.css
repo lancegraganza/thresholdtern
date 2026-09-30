@@ -100,6 +100,7 @@ h3 {
   height: 32px;
 }
 .btn {
+  white-space: nowrap;
   min-height: 46px;
   padding: 11px 20px;
   border-radius: 8px;
@@ -533,7 +534,7 @@ footer {
 }
 .choices {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-top: 28px;
 }
@@ -544,6 +545,7 @@ footer {
   border-radius: 10px;
   background: transparent;
 }
+.choice:last-child { grid-column: 1 / -1; }
 .choice.chosen {
   border: 2px solid var(--primary);
   padding: 23px;

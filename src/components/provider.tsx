@@ -35,14 +35,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   function saveGate(g: Gate) {
     setGates((previous) => {
       const next = [g, ...previous.filter((x) => x.address !== g.address)];
-      localStorage.setItem(gateKey, JSON.stringify(next));
+      try {
+        localStorage.setItem(gateKey, JSON.stringify(next));
+      } catch {
+        /* Chain state remains recoverable by address. */
+      }
       return next;
     });
   }
   function saveReceipt(r: Receipt) {
     setReceipts((previous) => {
       const next = [r, ...previous.filter((x) => x.txId !== r.txId)];
-      localStorage.setItem(receiptKey, JSON.stringify(next));
+      try {
+        localStorage.setItem(receiptKey, JSON.stringify(next));
+      } catch {
+        /* Keep the confirmed receipt available in memory. */
+      }
       return next;
     });
   }

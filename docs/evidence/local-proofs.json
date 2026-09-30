@@ -1,7 +1,7 @@
 {
   "scope": "local proof server; no network settlement claimed",
   "compiler": "0.31.1",
-  "checkedAt": "2026-09-30T08:05:51.879Z",
+  "checkedAt": "2026-09-30T08:26:23.073Z",
   "proofs": [
     {
       "circuit": "verify",

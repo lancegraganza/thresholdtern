@@ -16,6 +16,8 @@ Pending frontend deployment. Local application: `http://localhost:3000`.
 
 Each published gate has its own contract address and share URL. Run `npm run deploy:preprod` with the local app running, then publish through the gate wizard in the browser with Lace. Paste the confirmed address back into the chat to bind this README to real deployment evidence.
 
+Verify the confirmed address with `npm run verify:preprod -- <address>`. This checks live public state and the deployed circuit verifier keys against the actual generated keys and writes a public evidence receipt.
+
 ## What This Does
 
 ThresholdTern lets a creator publish a public eligibility requirement and a participant prove a private number meets it. The focused demo is **Create 18+ Gate → Publish → Share → Connect Wallet → Prove Privately → Midnight Confirms → Eligibility Result**. Gate details, activity and wallet settings keep creator and participant workflows separate.

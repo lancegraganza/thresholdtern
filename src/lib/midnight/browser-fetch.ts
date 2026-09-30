@@ -1,5 +1,8 @@
 const browserFetch: typeof globalThis.fetch = (input, options) =>
-  globalThis.fetch(input, { ...options, signal: options?.signal ?? AbortSignal.timeout(20_000) });
+  globalThis.fetch(input, {
+    ...options,
+    signal: options?.signal ?? AbortSignal.timeout(20_000),
+  });
 export default browserFetch;
 export { browserFetch as fetch };
 export const Headers = globalThis.Headers;

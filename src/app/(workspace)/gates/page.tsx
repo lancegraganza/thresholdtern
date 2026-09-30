@@ -10,7 +10,7 @@ import { failure } from "@/lib/midnight/wallet";
 import { useWallet } from "@/components/wallet-provider";
 export default function Gates() {
   const { gates, ready, saveGate, toast } = useStore();
-  const {wallet,password,open}=useWallet();
+  const { wallet, password, open } = useWallet();
   const [opened, setOpened] = useState(false),
     [address, setAddress] = useState(""),
     [error, setError] = useState(""),
@@ -25,9 +25,15 @@ export default function Gates() {
     try {
       const { readGate, makeClient } = await import("@/lib/midnight/client");
       saveGate(await readGate(address.trim()));
-      if(localStorage.getItem("thresholdtern:pending-deploy")) {
-        if(!wallet){setError("The public gate is restored. Connect your original wallet to recover creator access.");open();return;}
-        const client=await makeClient(wallet,password,()=>{});
+      if (localStorage.getItem("thresholdtern:pending-deploy")) {
+        if (!wallet) {
+          setError(
+            "The public gate is restored. Connect your original wallet to recover creator access.",
+          );
+          open();
+          return;
+        }
+        const client = await makeClient(wallet, password, () => {});
         await client.recoverCreator(address.trim());
       }
       setOpened(false);

@@ -111,7 +111,7 @@ export function Modal({
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const titleId=useId();
+  const titleId = useId();
   useEffect(() => {
     const dialog = ref.current;
     if (open && !dialog?.open) dialog?.showModal();
@@ -120,7 +120,10 @@ export function Modal({
   return (
     <dialog
       ref={ref}
-      onCancel={(event)=>{event.preventDefault();onClose();}}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
       onClose={onClose}
       aria-labelledby={titleId}
     >

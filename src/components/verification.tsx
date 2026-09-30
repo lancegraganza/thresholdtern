@@ -326,8 +326,8 @@ export function Verification({
                       autoComplete="off"
                       value={value}
                       onChange={(e) => setValue(e.target.value)}
-                  aria-describedby={`private-value-hint${error ? ' verification-error' : ''}`}
-                  aria-invalid={!!error && !pending}
+                      aria-describedby={`private-value-hint${error ? " verification-error" : ""}`}
+                      aria-invalid={!!error && !pending}
                     />
                   </Field>
                   <p className="hint">
@@ -358,7 +358,9 @@ export function Verification({
           )}
           {error && (
             <div style={{ marginTop: 24 }}>
-              <Notice id="verification-error" error>{error}</Notice>
+              <Notice id="verification-error" error>
+                {error}
+              </Notice>
             </div>
           )}
         </Card>

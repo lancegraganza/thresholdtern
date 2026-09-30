@@ -1,0 +1,64 @@
+
+> thresholdtern@0.1.0 verify
+> npm run compact:compile && npm test && npm run typecheck && npm run build
+
+
+> thresholdtern@0.1.0 compact:compile
+> node scripts/compile.mjs
+
+Compiling 2 circuits:
+Compact 0.31.1 compiled successfully. Generated verify and close circuits, prover and verifier keys.
+Contract metadata: compiler-version, language-version, runtime-version, circuits, witnesses, contracts, ledger
+
+> thresholdtern@0.1.0 test
+> vitest run
+
+
+ RUN  v5.0.1 C:/Users/IAN/OneDrive/Desktop/professional/hackathon/stellar/ThresholdTern
+
+Sourcemap for "C:/Users/IAN/OneDrive/Desktop/professional/hackathon/stellar/ThresholdTern/managed/thresholdtern/contract/index.js" points to missing source files
+
+ Test Files  2 passed (2)
+      Tests  25 passed (25)
+   Start at  16:23:55
+   Duration  1.21s (tests 58%, transform 21%, import 19%, worker 2%)
+
+
+> thresholdtern@0.1.0 typecheck
+> tsc --noEmit
+
+
+> thresholdtern@0.1.0 build
+> node scripts/copy-artifacts.mjs && next build --webpack
+
+▲ Next.js 16.3.6 (webpack)
+✓ Running next.config.ts took 65ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 13.3s
+  Running TypeScript ...
+  Finished TypeScript in 5.0s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/8) ...
+  Generating static pages using 11 workers (2/8) 
+  Generating static pages using 11 workers (4/8) 
+  Generating static pages using 11 workers (6/8) 
+✓ Generating static pages using 11 workers (8/8) in 1648ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /activity
+├ ○ /dashboard
+├ ○ /gates
+├ ƒ /gates/[address]
+├ ○ /gates/new
+├ ○ /settings
+└ ƒ /verify/[address]
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

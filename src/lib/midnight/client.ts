@@ -2,6 +2,7 @@
 import {
   deployContract,
   findDeployedContract,
+  verifyContractState,
 } from "@midnight-ntwrk/midnight-js-contracts";
 import { FetchZkConfigProvider } from "@midnight-ntwrk/midnight-js-fetch-zk-config-provider";
 import { httpClientProofProvider } from "@midnight-ntwrk/midnight-js-http-client-proof-provider";
@@ -38,12 +39,45 @@ function dataProvider() {
   setNetworkId("preprod");
   return indexerPublicDataProvider(HTTP, WS);
 }
-export async function readGate(address: string): Promise<Gate> {
+async function checkedState(address: string) {
   if (!isAddress(address))
     throw new UserError(
       "This gate link is invalid. Ask the creator for the full share link.",
     );
   const state = await dataProvider().queryContractState(address);
+  if (!state)
+    throw new UserError(
+      "This contract was not found on Preprod. Check the link or wait for deployment confirmation.",
+    );
+  const zk = new FetchZkConfigProvider<Circuit>(
+    `${window.location.origin}/zk/thresholdtern`,
+  );
+  const [verify, close] = await Promise.all([
+    zk.getVerifierKey("verify"),
+    zk.getVerifierKey("close"),
+  ]);
+  try {
+    verifyContractState(
+      [
+        ["verify", verify],
+        ["close", close],
+      ],
+      state,
+    );
+    if (state.operations().length !== 2) throw new Error("Unexpected circuit");
+  } catch {
+    throw new UserError(
+      "This contract's circuits do not match ThresholdTern. Check the share link.",
+    );
+  }
+  return state;
+}
+export async function readGate(address: string): Promise<Gate> {
+  if (!isAddress(address))
+    throw new UserError(
+      "This gate link is invalid. Ask the creator for the full share link.",
+    );
+  const state = await checkedState(address);
   if (!state)
     throw new UserError(
       "This contract was not found on Preprod. Check the link or wait for the deployment to confirm.",
@@ -72,7 +106,7 @@ export async function readReceipt(
 ): Promise<boolean | null> {
   if (!isAddress(address) || !isAddress(id))
     throw new UserError("The receipt reference is invalid.");
-  const state = await dataProvider().queryContractState(address);
+  const state = await checkedState(address);
   if (!state) throw new UserError("The gate is unavailable on Preprod.");
   const view = ledger(state.data),
     key = fromHex(id);
@@ -179,7 +213,10 @@ export async function makeClient(
       if (error) throw new UserError(error);
       const privateStateId = `creator-${crypto.randomUUID()}`;
       const admin = crypto.getRandomValues(new Uint8Array(32));
-      localStorage.setItem("thresholdtern:pending-creator-state", privateStateId);
+      localStorage.setItem(
+        "thresholdtern:pending-creator-state",
+        privateStateId,
+      );
       const title = new Uint8Array(64);
       title.set(new TextEncoder().encode(draft.name.trim()));
       // Persist creator recovery before sending any transaction. The private
@@ -212,29 +249,31 @@ export async function makeClient(
     },
     async verify(gate: Gate, id: string): Promise<Receipt> {
       try {
-      const privateStateId = `participant-${gate.address}`;
-      const found = await findDeployedContract(providers, {
-        compiledContract,
-        contractAddress: gate.address,
-        privateStateId,
-        initialPrivateState: { admin: new Uint8Array(32) },
-      });
-      const result = await found.callTx.verify(fromHex(id));
-      const eligible = await readReceipt(gate.address, id);
-      if (eligible === null)
-        throw new UserError(
-          "The transaction returned, but its receipt is not visible yet. Check the result again before retrying.",
-        );
-      return {
-        gate: gate.address,
-        gateName: gate.name,
-        id,
-        eligible,
-        txId: result.public.txId,
-        blockHeight: result.public.blockHeight,
-        time: new Date().toISOString(),
-      };
-      } finally { privateInput=undefined; }
+        const privateStateId = `participant-${gate.address}`;
+        const found = await findDeployedContract(providers, {
+          compiledContract,
+          contractAddress: gate.address,
+          privateStateId,
+          initialPrivateState: { admin: new Uint8Array(32) },
+        });
+        const result = await found.callTx.verify(fromHex(id));
+        const eligible = await readReceipt(gate.address, id);
+        if (eligible === null)
+          throw new UserError(
+            "The transaction returned, but its receipt is not visible yet. Check the result again before retrying.",
+          );
+        return {
+          gate: gate.address,
+          gateName: gate.name,
+          id,
+          eligible,
+          txId: result.public.txId,
+          blockHeight: result.public.blockHeight,
+          time: new Date().toISOString(),
+        };
+      } finally {
+        privateInput = undefined;
+      }
     },
     async close(address: string) {
       const privateStateId = localStorage.getItem(
@@ -253,16 +292,24 @@ export async function makeClient(
       return { gate: await readGate(address), txId: result.public.txId };
     },
     async recoverCreator(address: string) {
-      const privateStateId = localStorage.getItem("thresholdtern:pending-creator-state");
+      const privateStateId = localStorage.getItem(
+        "thresholdtern:pending-creator-state",
+      );
       if (!privateStateId) return false;
       const state = await privateStateProvider.get(privateStateId);
-      if (!state) throw new UserError("The creator secret is unavailable for this wallet and password.");
+      if (!state)
+        throw new UserError(
+          "The creator secret is unavailable for this wallet and password.",
+        );
       const publicState = await dataProvider().queryContractState(address);
       if (!publicState) throw new UserError("This gate is not confirmed yet.");
-      const { persistentHash, CompactTypeBytes } = await import("@midnight-ntwrk/compact-runtime");
+      const { persistentHash, CompactTypeBytes } =
+        await import("@midnight-ntwrk/compact-runtime");
       const expected = persistentHash(new CompactTypeBytes(32), state.admin);
       if (toHex(expected) !== toHex(ledger(publicState.data).adminHash))
-        throw new UserError("This address does not match the pending creator secret.");
+        throw new UserError(
+          "This address does not match the pending creator secret.",
+        );
       localStorage.setItem(`thresholdtern:creator:${address}`, privateStateId);
       localStorage.removeItem("thresholdtern:pending-creator-state");
       localStorage.removeItem("thresholdtern:pending-deploy");
