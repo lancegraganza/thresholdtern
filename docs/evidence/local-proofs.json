@@ -1,0 +1,22 @@
+{
+  "scope": "local proof server; no network settlement claimed",
+  "compiler": "0.31.1",
+  "checkedAt": "2026-09-30T08:05:51.879Z",
+  "proofs": [
+    {
+      "circuit": "verify",
+      "proofBytes": 2940,
+      "result": true
+    },
+    {
+      "circuit": "verify",
+      "proofBytes": 2940,
+      "result": false
+    },
+    {
+      "circuit": "close",
+      "proofBytes": 4508,
+      "result": "closed"
+    }
+  ]
+}
